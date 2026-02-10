@@ -15,7 +15,11 @@
 	},
 	"compatibility_flags": [
 		"nodejs_compat"
-	]
+	],
+	"browser": {
+		"binding": "BROWSER",
+		"remote": true
+	}
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

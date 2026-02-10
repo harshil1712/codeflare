@@ -12,8 +12,13 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
+		"@cloudflare/kumo": "^1.1.0",
+		"@cloudflare/puppeteer": "^1.0.6",
+		"hono": "^4.11.9",
 		"react": "^19.1.1",
-		"react-dom": "^19.1.1"
+		"react-dom": "^19.1.1",
+		"react-simple-code-editor": "^0.14.1",
+		"shiki": "^3.22.0"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.23.1",
