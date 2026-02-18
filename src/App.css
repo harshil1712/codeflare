@@ -4,60 +4,95 @@
   overflow: hidden;
 }
 
+/* ─── Sidebar ─────────────────────────────────────────────── */
+
 .app-sidebar {
   width: 400px;
-  background: #1a1b26;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: #161616;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
 }
 
-.app-header {
-  padding: 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+/* ─── Nav bar ─────────────────────────────────────────────── */
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.app-nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-camera-icon {
+  color: #F6821F;
+  flex-shrink: 0;
 }
 
 .app-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+  background: linear-gradient(135deg, #F6821F 0%, #FF9A40 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  letter-spacing: -0.01em;
 }
 
-.app-subtitle {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.875rem;
+.nav-github-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.45);
+  transition: color 0.2s, background 0.2s;
+  text-decoration: none;
 }
+
+.nav-github-link:hover {
+  color: #F6821F;
+  background: rgba(246, 130, 31, 0.1);
+}
+
+/* ─── Main canvas ─────────────────────────────────────────── */
 
 .app-main {
   flex: 1;
   overflow: auto;
-  background: #1a1b26;
+  background: #0a0a0a;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* ─── Control panel ───────────────────────────────────────── */
+
 .control-panel {
-  margin: 1.5rem;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1.25rem;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
 }
 
 .section-title {
   margin: 0 0 1rem 0;
-  font-size: 0.875rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .control-group {
@@ -68,33 +103,19 @@
   margin-bottom: 0;
 }
 
+.control-group:has(button[role="switch"]) {
+  --color-kumo-recessed: rgba(255, 255, 255, 0.15);
+  --color-kumo-brand: #F6821F;
+  --color-kumo-brand-hover: #e0721a;
+  --color-kumo-interact: rgba(255, 255, 255, 0.22);
+}
+
 .control-label {
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.control-select {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: white;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.control-select:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.control-select:focus {
-  outline: none;
-  border-color: #667eea;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .control-color {
@@ -102,19 +123,19 @@
   height: 40px;
   padding: 4px;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.2s;
 }
 
 .control-color:hover {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .control-color:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #F6821F;
 }
 
 .control-range {
@@ -124,45 +145,36 @@
   border-radius: 2px;
   outline: none;
   -webkit-appearance: none;
+  accent-color: #F6821F;
 }
 
 .control-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
-  background: #667eea;
+  background: #F6821F;
   cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(246, 130, 31, 0.2);
+  transition: box-shadow 0.2s;
+}
+
+.control-range::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 0 4px rgba(246, 130, 31, 0.3);
 }
 
 .control-range::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
-  background: #667eea;
+  background: #F6821F;
   cursor: pointer;
   border: none;
+  box-shadow: 0 0 0 3px rgba(246, 130, 31, 0.2);
 }
 
-.control-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.control-checkbox input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.control-checkbox span {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.875rem;
-}
+/* ─── Background swatches ─────────────────────────────────── */
 
 .background-grid {
   display: grid;
@@ -175,24 +187,26 @@
   width: 100%;
   aspect-ratio: 1;
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
   position: relative;
 }
 
 .background-option:hover {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
 .background-option-active {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+  border-color: #F6821F;
+  box-shadow: 0 0 0 2px rgba(246, 130, 31, 0.3);
 }
 
+/* ─── Export section ──────────────────────────────────────── */
+
 .export-section {
-  padding: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin-top: auto;
 }
 
@@ -200,29 +214,33 @@
   width: 100%;
 }
 
+/* ─── Preview canvas ──────────────────────────────────────── */
+
 .preview-background {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55);
 }
 
 .preview-container {
   max-width: 100%;
 }
 
+/* ─── Window card ─────────────────────────────────────────── */
+
 .window-card {
   background: #1e1e2e;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(10px);
   max-width: 800px;
 }
 
 .window-title-bar {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -254,7 +272,7 @@
 
 .window-title {
   margin-left: 8px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 12px;
   font-weight: 500;
 }
@@ -263,18 +281,18 @@
   padding: 24px;
 }
 
-/* Editor wrapper with line numbers */
+/* ─── Editor ──────────────────────────────────────────────── */
+
 .editor-wrapper {
   display: flex;
   min-height: 200px;
 }
 
-/* Line number gutter */
 .line-gutter {
   flex-shrink: 0;
   padding: 0 1em 0 0;
   text-align: right;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.25);
   user-select: none;
   pointer-events: none;
   font-family: ui-monospace, 'Fira Code', 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
@@ -283,7 +301,6 @@
   white-space: pre;
 }
 
-/* react-simple-code-editor overrides */
 .code-textarea {
   outline: none !important;
   caret-color: white !important;
@@ -295,21 +312,20 @@
   background: transparent !important;
 }
 
-/* Ensure Shiki styles are preserved */
 .code-pre span {
   font-family: inherit !important;
 }
 
 .input-layer::selection {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(246, 130, 31, 0.2);
 }
 
 .input-layer::-moz-selection {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(246, 130, 31, 0.2);
 }
 
 .preview-placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.4);
   text-align: center;
   padding: 3rem 2rem;
   font-size: 0.875rem;
@@ -318,6 +334,8 @@
   align-items: center;
   justify-content: center;
 }
+
+/* ─── Responsive ──────────────────────────────────────────── */
 
 @media (max-width: 1024px) {
   .app {

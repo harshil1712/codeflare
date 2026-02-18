@@ -1,3 +1,5 @@
+import { Select } from "@cloudflare/kumo";
+
 interface LanguageSelectorProps {
   value: string;
   onChange: (language: string) => void;
@@ -29,18 +31,17 @@ const COMMON_LANGUAGES = [
 function LanguageSelector({ value, onChange }: LanguageSelectorProps) {
   return (
     <div className="control-group">
-      <label className="control-label">Language</label>
-      <select
-        className="control-select"
+      <Select
+        label="Language"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onValueChange={(val) => onChange(val as string)}
       >
         {COMMON_LANGUAGES.map((lang) => (
-          <option key={lang.id} value={lang.id}>
+          <Select.Option key={lang.id} value={lang.id}>
             {lang.name}
-          </option>
+          </Select.Option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }

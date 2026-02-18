@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createHighlighter, type Highlighter } from "shiki";
 import Editor from "react-simple-code-editor";
 import WindowCard from "./WindowCard";
@@ -29,10 +29,34 @@ function Preview({
 
   // Create highlighter when theme or language changes
   useEffect(() => {
+    let cancelled = false;
+    const prevHighlighter = highlighter;
+
     createHighlighter({
       themes: [theme],
       langs: [language],
-    }).then((h) => setHighlighter(h));
+    })
+      .then((h) => {
+        if (cancelled) {
+          h.dispose();
+          return;
+        }
+        setHighlighter(h);
+        // Dispose previous highlighter after new one is set
+        if (prevHighlighter) {
+          prevHighlighter.dispose();
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error("Failed to create highlighter:", error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, language]);
 
   // Generate highlighted HTML when code, language, or theme changes
@@ -62,9 +86,11 @@ function Preview({
     }
   }, [highlighter, code, language, theme]);
 
-  // Generate line numbers for the gutter
-  const lineCount = code.split('\n').length;
-  const lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
+  // Generate line numbers for the gutter (memoized)
+  const lineNumbers = useMemo(() => {
+    const lineCount = code.split('\n').length;
+    return Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
+  }, [code]);
 
   return (
     <div className="preview-container">
@@ -88,6 +114,8 @@ function Preview({
             }}
             textareaClassName="code-textarea"
             preClassName="code-pre"
+            textareaId="code-editor"
+            aria-label="Code editor"
           />
         </div>
       </WindowCard>

@@ -9,6 +9,8 @@ export interface ThemeOption {
 }
 
 export const BACKGROUND_PRESETS: BackgroundPreset[] = [
+  { name: "Cloudflare Light", gradient: "linear-gradient(135deg, #fef7ed 0%, #fffbf5 100%)" },
+  { name: "Cloudflare Dark", gradient: "linear-gradient(135deg, #1a1209 0%, #2a2927 100%)" },
   { name: "Sunset", gradient: "linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)" },
   { name: "Ocean", gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
   { name: "Purple Haze", gradient: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)" },

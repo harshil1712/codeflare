@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@cloudflare/kumo";
+import { ArrowSquareOut } from "@phosphor-icons/react";
 import type { ScreenshotOptions } from "../types";
 
 interface ExportButtonProps {
@@ -58,6 +59,9 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
       onClick={handleExport}
       disabled={disabled || isLoading || !options.code}
       className="export-button"
+      variant="primary"
+      size="lg"
+      icon={<ArrowSquareOut weight="bold" />}
     >
       {isLoading ? "Generating..." : "Export Screenshot"}
     </Button>

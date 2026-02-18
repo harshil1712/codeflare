@@ -1,3 +1,4 @@
+import { Select } from "@cloudflare/kumo";
 import { THEME_OPTIONS } from "../types";
 
 interface ThemeSelectorProps {
@@ -8,18 +9,17 @@ interface ThemeSelectorProps {
 function ThemeSelector({ value, onChange }: ThemeSelectorProps) {
   return (
     <div className="control-group">
-      <label className="control-label">Theme</label>
-      <select
-        className="control-select"
+      <Select
+        label="Theme"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onValueChange={(val) => onChange(val as string)}
       >
         {THEME_OPTIONS.map((theme) => (
-          <option key={theme.id} value={theme.id}>
+          <Select.Option key={theme.id} value={theme.id}>
             {theme.name}
-          </option>
+          </Select.Option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }
