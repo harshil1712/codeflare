@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "codeshot",
+	"name": "codeflare",
 	"main": "worker/index.ts",
 	"compatibility_date": "2026-02-05",
 	"assets": {
@@ -19,7 +19,23 @@
 	"browser": {
 		"binding": "BROWSER",
 		"remote": true
-	}
+	},
+	"r2_buckets": [
+		{
+			"binding": "SCREENSHOTS",
+			"bucket_name": "codeflare-screenshots"
+		}
+	],
+	"ratelimits": [
+		{
+			"name": "RATE_LIMITER",
+			"namespace_id": "1001",
+			"simple": {
+				"limit": 10,
+				"period": 60
+			}
+		}
+	]
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

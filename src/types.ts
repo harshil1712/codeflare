@@ -37,6 +37,8 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: "vitesse-dark", name: "Vitesse Dark" },
 ];
 
+export type ExportAction = "r2_only" | "r2_and_download" | "download_only";
+
 export interface ScreenshotOptions {
   code: string;
   language: string;

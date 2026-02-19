@@ -11,9 +11,13 @@ const lineNumberTransformer: ShikiTransformer = {
   }
 };
 
+type ExportAction = "r2_only" | "r2_and_download" | "download_only";
+
 interface AppEnv {
   Bindings: {
     BROWSER: Fetcher;
+    SCREENSHOTS: R2Bucket;
+    RATE_LIMITER: RateLimit;
   };
 }
 
@@ -35,44 +39,7 @@ app.use("/api/*", cors({
   maxAge: 86400,
 }));
 
-// Simple rate limiter using module-level Map (persists across requests in same isolate)
-// PRODUCTION RECOMMENDATION: Use one of these instead:
-// 1. Cloudflare Rate Limiting Rules (https://developers.cloudflare.com/waf/rate-limiting-rules/)
-// 2. Cloudflare Durable Objects for distributed rate limiting
-// 3. Cloudflare KV with expiring keys
-// This implementation is suitable for moderate traffic but may not scale for high traffic
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX = 10; // 10 requests per minute
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const record = rateLimitStore.get(ip);
-
-  // Lazy cleanup: periodically clear old entries to prevent memory growth
-  if (rateLimitStore.size > 1000) {
-    for (const [key, value] of rateLimitStore.entries()) {
-      if (now > value.resetTime) {
-        rateLimitStore.delete(key);
-      }
-    }
-  }
-
-  // Check if this IP has a rate limit record
-  if (!record || now > record.resetTime) {
-    rateLimitStore.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return true;
-  }
-
-  // Check if limit exceeded
-  if (record.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
-
-  // Increment count
-  record.count++;
-  return true;
-}
 
 // HTML escape function to prevent XSS
 function escapeHtml(text: string): string {
@@ -91,7 +58,7 @@ function isValidCssValue(value: string): boolean {
   // Allow hex colors, rgb/rgba, named colors, gradients
   const hexPattern = /^#[0-9a-fA-F]{3,8}$/;
   const rgbPattern = /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/;
-  const gradientPattern = /^(linear|radial)-gradient\([^)]+\)$/;
+  const gradientPattern = /^(linear|radial)-gradient\(([^()]*|\([^()]*\))*\)$/;
   const namedColors = /^(transparent|black|white|red|green|blue|yellow|purple|pink|orange|gray|grey)$/i;
   
   return hexPattern.test(value) || 
@@ -125,13 +92,15 @@ interface ScreenshotRequest {
   showLineNumbers: boolean;
   windowTitle: string;
   cardBackground: string;
+  action?: ExportAction;
 }
 
 app.post("/api/screenshot", async (c) => {
   try {
-    // Rate limiting
+    // Rate limiting via Cloudflare Rate Limiting binding
     const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
-    if (!checkRateLimit(ip)) {
+    const { success } = await c.env.RATE_LIMITER.limit({ key: ip });
+    if (!success) {
       return c.json({ error: "Rate limit exceeded. Please try again later." }, 429);
     }
 
@@ -153,6 +122,7 @@ app.post("/api/screenshot", async (c) => {
       showLineNumbers = true,
       windowTitle = "code.tsx",
       cardBackground = "#1e1e2e",
+      action = "download_only",
     } = body;
 
     // Validate required field
@@ -356,9 +326,23 @@ app.post("/api/screenshot", async (c) => {
         omitBackground: background === "transparent",
       });
 
+      // Store in R2 if requested
+      if (action === "r2_only" || action === "r2_and_download") {
+        const key = `screenshots/${Date.now()}-${crypto.randomUUID()}.png`;
+        await c.env.SCREENSHOTS.put(key, screenshot, {
+          httpMetadata: { contentType: "image/png" },
+        });
+
+        if (action === "r2_only") {
+          return c.json({ success: true, key });
+        }
+      }
+
+      // Download: return raw PNG bytes
       return new Response(screenshot, {
         headers: {
           "Content-Type": "image/png",
+          "Content-Disposition": `attachment; filename="codeflare-${Date.now()}.png"`,
         },
       });
     } finally {
@@ -379,7 +363,7 @@ app.post("/api/screenshot", async (c) => {
 
 app.get("/api/", (c) => {
   return c.json({
-    name: "CodeShot API",
+    name: "CodeFlare API",
     version: "1.0.0",
     endpoints: ["/api/screenshot"],
   });

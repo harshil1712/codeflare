@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Input, Surface, Switch } from "@cloudflare/kumo";
-import { Camera, GithubLogo } from "@phosphor-icons/react";
+import { GithubLogo } from "@phosphor-icons/react";
 import Preview from "./components/Preview";
 import ThemeSelector from "./components/ThemeSelector";
 import BackgroundSelector from "./components/BackgroundSelector";
