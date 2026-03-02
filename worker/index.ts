@@ -34,7 +34,7 @@ app.use("/api/*", cors({
     // Example: return origin.endsWith('.yourdomain.com') ? origin : 'https://yourdomain.com';
     return origin;
   },
-  allowMethods: ["POST", "GET", "OPTIONS"],
+  allowMethods: ["POST", "GET", "DELETE", "OPTIONS"],
   allowHeaders: ["Content-Type"],
   maxAge: 86400,
 }));
@@ -361,11 +361,71 @@ app.post("/api/screenshot", async (c) => {
   }
 });
 
+// List all saved screenshots
+app.get("/api/screenshots", async (c) => {
+  try {
+    const listed = await c.env.SCREENSHOTS.list({ prefix: "screenshots/" });
+    const screenshots = listed.objects.map((obj) => ({
+      key: obj.key,
+      uploaded: obj.uploaded.toISOString(),
+      size: obj.size,
+    }));
+    return c.json({ screenshots });
+  } catch (error) {
+    console.error("List screenshots error:", error);
+    return c.json({ error: "Failed to list screenshots" }, 500);
+  }
+});
+
+// Serve a single screenshot from R2
+app.get("/api/screenshots/*", async (c) => {
+  // Use the raw URL so percent-encoded slashes (%2F) are preserved before decoding,
+  // ensuring the full R2 key (e.g. "screenshots/foo.png") is reconstructed correctly.
+  const rawPath = new URL(c.req.raw.url).pathname;
+  const key = decodeURIComponent(rawPath.replace(/^\/api\/screenshots\//, ""));
+  if (!key) {
+    return c.json({ error: "Missing screenshot key" }, 400);
+  }
+
+  try {
+    const object = await c.env.SCREENSHOTS.get(key);
+    if (!object) {
+      return c.json({ error: "Screenshot not found" }, 404);
+    }
+
+    const headers = new Headers();
+    headers.set("Content-Type", "image/png");
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+
+    return new Response(object.body, { headers });
+  } catch (error) {
+    console.error("Get screenshot error:", error);
+    return c.json({ error: "Failed to retrieve screenshot" }, 500);
+  }
+});
+
+// Delete a screenshot from R2
+app.delete("/api/screenshots/*", async (c) => {
+  const rawPath = new URL(c.req.raw.url).pathname;
+  const key = decodeURIComponent(rawPath.replace(/^\/api\/screenshots\//, ""));
+  if (!key) {
+    return c.json({ error: "Missing screenshot key" }, 400);
+  }
+
+  try {
+    await c.env.SCREENSHOTS.delete(key);
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("Delete screenshot error:", error);
+    return c.json({ error: "Failed to delete screenshot" }, 500);
+  }
+});
+
 app.get("/api/", (c) => {
   return c.json({
     name: "CodeFlare API",
     version: "1.0.0",
-    endpoints: ["/api/screenshot"],
+    endpoints: ["/api/screenshot", "/api/screenshots"],
   });
 });
 

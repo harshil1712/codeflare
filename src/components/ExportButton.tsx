@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@cloudflare/kumo";
 import { ArrowSquareOut, CloudArrowUp, DownloadSimple } from "@phosphor-icons/react";
 import type { ExportAction, ScreenshotOptions } from "../types";
@@ -21,11 +22,11 @@ function triggerDownload(blob: Blob) {
 
 function ExportButton({ options, disabled }: ExportButtonProps) {
   const [loadingAction, setLoadingAction] = useState<ExportAction | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [savedToR2, setSavedToR2] = useState(false);
 
-  const showToast = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3000);
+  const showSavedToast = () => {
+    setSavedToR2(true);
+    setTimeout(() => setSavedToR2(false), 4000);
   };
 
   const handleExport = async (action: ExportAction) => {
@@ -46,12 +47,12 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
       }
 
       if (action === "r2_only") {
-        showToast("Saved to R2!");
+        showSavedToast();
       } else {
         const blob = await response.blob();
         triggerDownload(blob);
         if (action === "r2_and_download") {
-          showToast("Saved to R2!");
+          showSavedToast();
         }
       }
     } catch (error) {
@@ -70,7 +71,14 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
 
   return (
     <div className="export-buttons">
-      {toast && <p className="export-toast">{toast}</p>}
+      {savedToR2 && (
+        <p className="export-toast">
+          Saved!{" "}
+          <Link to="/gallery" className="export-toast-link">
+            View in Gallery
+          </Link>
+        </p>
+      )}
 
       <Button
         onClick={() => handleExport("r2_only")}

@@ -39,6 +39,12 @@ export const THEME_OPTIONS: ThemeOption[] = [
 
 export type ExportAction = "r2_only" | "r2_and_download" | "download_only";
 
+export interface ScreenshotMeta {
+  key: string;
+  uploaded: string; // ISO timestamp
+  size: number;     // bytes
+}
+
 export interface ScreenshotOptions {
   code: string;
   language: string;

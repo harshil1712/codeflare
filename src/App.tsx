@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { Input, Surface, Switch } from "@cloudflare/kumo";
-import { GithubLogo } from "@phosphor-icons/react";
 import Preview from "./components/Preview";
 import ThemeSelector from "./components/ThemeSelector";
 import BackgroundSelector from "./components/BackgroundSelector";
@@ -31,7 +30,7 @@ function hexToRgba(hex: string, opacity: number): string {
   return `rgba(${r}, ${g}, ${b}, ${clampedOpacity / 100})`;
 }
 
-function App() {
+function EditorPage() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [language, setLanguage] = useState("typescript");
   const [theme, setTheme] = useState("github-dark");
@@ -76,21 +75,6 @@ function App() {
   return (
     <div className="app">
       <div className="app-sidebar">
-        <nav className="app-nav">
-          <div className="app-nav-logo">
-            <h1 className="app-title">CodeFlare</h1>
-          </div>
-          <a
-            href="https://github.com/harshil1712/codeflare"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="nav-github-link"
-            aria-label="View on GitHub"
-          >
-            <GithubLogo size={18} />
-          </a>
-        </nav>
-
         <Surface className="control-panel">
           <h2 className="section-title">Customization</h2>
 
@@ -214,4 +198,4 @@ function App() {
   );
 }
 
-export default App;
+export default EditorPage;

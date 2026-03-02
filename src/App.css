@@ -1,6 +1,71 @@
+/* ─── App root (wraps header + page content) ──────────────── */
+
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Top header bar ──────────────────────────────────────── */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  height: 48px;
+  background: #161616;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.app-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.header-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.header-nav-link:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.header-nav-link-active {
+  color: #F6821F;
+  background: rgba(246, 130, 31, 0.1);
+}
+
+.header-nav-link-active:hover {
+  color: #F6821F;
+  background: rgba(246, 130, 31, 0.15);
+}
+
+/* ─── Editor layout (fills remaining height below header) ─── */
+
 .app {
   display: flex;
-  height: 100vh;
+  flex: 1;
   overflow: hidden;
 }
 
@@ -15,27 +80,7 @@
   overflow-y: auto;
 }
 
-/* ─── Nav bar ─────────────────────────────────────────────── */
-
-.app-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.875rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
-}
-
-.app-nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.nav-camera-icon {
-  color: #F6821F;
-  flex-shrink: 0;
-}
+/* ─── Nav helpers ─────────────────────────────────────────── */
 
 .app-title {
   font-size: 1.0625rem;
@@ -354,6 +399,323 @@
   justify-content: center;
 }
 
+/* ─── Export toast link ───────────────────────────────────── */
+
+.export-toast-link {
+  color: #27c93f;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.export-toast-link:hover {
+  color: #4ed862;
+}
+
+/* ─── Gallery page ────────────────────────────────────────── */
+
+.gallery-page {
+  flex: 1;
+  overflow-y: auto;
+  background: #0d0d0d;
+  padding: 2rem 2.5rem;
+}
+
+.gallery-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.gallery-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 0.25rem 0;
+}
+
+.gallery-subtitle {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.35);
+  margin: 0;
+}
+
+.gallery-error {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 80, 80, 0.08);
+  border: 1px solid rgba(255, 80, 80, 0.2);
+  border-radius: 8px;
+  color: #ff6b6b;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.gallery-retry-btn {
+  padding: 0.3125rem 0.875rem;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  background: transparent;
+  color: #ff6b6b;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.gallery-retry-btn:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+/* ─── Gallery empty state ─────────────────────────────────── */
+
+.gallery-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 5rem 2rem;
+  gap: 1rem;
+}
+
+.gallery-empty-icon {
+  color: rgba(255, 255, 255, 0.15);
+  margin-bottom: 0.5rem;
+}
+
+.gallery-empty-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0;
+}
+
+.gallery-empty-body {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.25);
+  max-width: 360px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.gallery-empty-body strong {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ─── Gallery grid ────────────────────────────────────────── */
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.gallery-card {
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gallery-card:hover {
+  border-color: rgba(246, 130, 31, 0.35);
+  box-shadow: 0 0 0 1px rgba(246, 130, 31, 0.15);
+}
+
+.gallery-card-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #111;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+
+.gallery-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s;
+}
+
+.gallery-card-thumb:hover .gallery-card-img {
+  transform: scale(1.02);
+}
+
+.gallery-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.8);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.gallery-card-thumb:hover .gallery-card-overlay {
+  opacity: 1;
+}
+
+.gallery-card-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gallery-card-date {
+  flex: 1;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gallery-card-size {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+
+.gallery-card-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.gallery-card-delete:hover {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.gallery-card-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Lightbox ────────────────────────────────────────────── */
+
+.gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 2rem;
+  backdrop-filter: blur(6px);
+}
+
+.gallery-lightbox-inner {
+  position: relative;
+  max-width: min(90vw, 1200px);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7);
+}
+
+.gallery-lightbox-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  z-index: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.gallery-lightbox-close:hover {
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+}
+
+.gallery-lightbox-img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(85vh - 52px);
+  object-fit: contain;
+}
+
+.gallery-lightbox-footer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.625rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.gallery-lightbox-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: auto;
+  padding: 0.3125rem 0.75rem;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  background: transparent;
+  color: #ff6b6b;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.gallery-lightbox-delete:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.gallery-lightbox-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── 404 not found ───────────────────────────────────────── */
+
+.not-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1rem;
+}
+
 /* ─── Responsive ──────────────────────────────────────────── */
 
 @media (max-width: 1024px) {
@@ -369,5 +731,13 @@
 
   .app-main {
     flex: 1;
+  }
+
+  .gallery-page {
+    padding: 1.25rem;
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
 }
