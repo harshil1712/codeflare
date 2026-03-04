@@ -8,6 +8,7 @@ import { createElement } from "react";
 import RootLayout from "./components/RootLayout";
 import EditorPage from "./App";
 import GalleryPage from "./components/Gallery";
+import AuthPage from "./components/AuthPage";
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -31,7 +32,13 @@ const galleryRoute = createRoute({
   component: GalleryPage,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, galleryRoute]);
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: AuthPage,
+});
+
+const routeTree = rootRoute.addChildren([indexRoute, galleryRoute, loginRoute]);
 
 export const router = createRouter({ routeTree });
 

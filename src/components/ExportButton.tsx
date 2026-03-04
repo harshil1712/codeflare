@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@cloudflare/kumo";
-import { ArrowSquareOut, CloudArrowUp, DownloadSimple } from "@phosphor-icons/react";
+import { ArrowSquareOut, CloudArrowUp, DownloadSimple, Lock } from "@phosphor-icons/react";
+import { authClient } from "../../lib/auth-client";
 import type { ExportAction, ScreenshotOptions } from "../types";
 
 interface ExportButtonProps {
@@ -23,6 +24,9 @@ function triggerDownload(blob: Blob) {
 function ExportButton({ options, disabled }: ExportButtonProps) {
   const [loadingAction, setLoadingAction] = useState<ExportAction | null>(null);
   const [savedToR2, setSavedToR2] = useState(false);
+  const { data: session } = authClient.useSession();
+
+  const isAuthenticated = !!session;
 
   const showSavedToast = () => {
     setSavedToR2(true);
@@ -39,6 +43,7 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...options, action }),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -60,7 +65,7 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
       alert(
         error instanceof Error
           ? error.message
-          : "Failed to generate screenshot. Please try again."
+          : "Failed to generate screenshot. Please try again.",
       );
     } finally {
       setLoadingAction(null);
@@ -80,25 +85,34 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
         </p>
       )}
 
-      <Button
-        onClick={() => handleExport("r2_only")}
-        disabled={isDisabled || loadingAction !== null}
-        variant="secondary"
-        size="base"
-        icon={<CloudArrowUp weight="bold" />}
-      >
-        {loadingAction === "r2_only" ? "Saving..." : "Save to R2"}
-      </Button>
+      {isAuthenticated ? (
+        <>
+          <Button
+            onClick={() => handleExport("r2_only")}
+            disabled={isDisabled || loadingAction !== null}
+            variant="secondary"
+            size="base"
+            icon={<CloudArrowUp weight="bold" />}
+          >
+            {loadingAction === "r2_only" ? "Saving..." : "Save to R2"}
+          </Button>
 
-      <Button
-        onClick={() => handleExport("r2_and_download")}
-        disabled={isDisabled || loadingAction !== null}
-        variant="secondary"
-        size="base"
-        icon={<ArrowSquareOut weight="bold" />}
-      >
-        {loadingAction === "r2_and_download" ? "Generating..." : "Save & Download"}
-      </Button>
+          <Button
+            onClick={() => handleExport("r2_and_download")}
+            disabled={isDisabled || loadingAction !== null}
+            variant="secondary"
+            size="base"
+            icon={<ArrowSquareOut weight="bold" />}
+          >
+            {loadingAction === "r2_and_download" ? "Generating..." : "Save & Download"}
+          </Button>
+        </>
+      ) : (
+        <Link to="/login" className="export-signin-prompt">
+          <Lock size={14} weight="bold" />
+          Sign in to save screenshots
+        </Link>
+      )}
 
       <Button
         onClick={() => handleExport("download_only")}

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Trash, X, ArrowsOut } from "@phosphor-icons/react";
+import { Link } from "@tanstack/react-router";
+import { Trash, X, ArrowsOut, Lock } from "@phosphor-icons/react";
+import { authClient } from "../../lib/auth-client";
 import type { ScreenshotMeta } from "../types";
 
 interface GalleryResponse {
@@ -24,17 +26,20 @@ function formatSize(bytes: number): string {
 }
 
 function GalleryPage() {
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
   const [screenshots, setScreenshots] = useState<ScreenshotMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const [lightboxKey, setLightboxKey] = useState<string | null>(null);
 
+  const isAuthenticated = !!session;
+
   const fetchScreenshots = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/screenshots");
+      const res = await fetch("/api/screenshots", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load screenshots");
       const data = await res.json() as GalleryResponse;
       // Sort newest first
@@ -50,8 +55,12 @@ function GalleryPage() {
   }, []);
 
   useEffect(() => {
-    fetchScreenshots();
-  }, [fetchScreenshots]);
+    if (isAuthenticated) {
+      fetchScreenshots();
+    } else if (!sessionLoading) {
+      setLoading(false);
+    }
+  }, [fetchScreenshots, isAuthenticated, sessionLoading]);
 
   // Close lightbox on Escape
   useEffect(() => {
@@ -67,6 +76,7 @@ function GalleryPage() {
     try {
       const res = await fetch(`/api/screenshots/${encodeURIComponent(key)}`, {
         method: "DELETE",
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to delete screenshot");
       setScreenshots((prev) => prev.filter((s) => s.key !== key));
@@ -79,6 +89,26 @@ function GalleryPage() {
   };
 
   const imgUrl = (key: string) => `/api/screenshots/${encodeURIComponent(key)}`;
+
+  // Show sign-in prompt for unauthenticated users
+  if (!sessionLoading && !isAuthenticated) {
+    return (
+      <div className="gallery-page">
+        <div className="gallery-auth-prompt">
+          <div className="gallery-auth-icon">
+            <Lock size={40} weight="bold" />
+          </div>
+          <h2 className="gallery-auth-title">Sign in to view your gallery</h2>
+          <p className="gallery-auth-body">
+            Your saved screenshots are private. Sign in to access them.
+          </p>
+          <Link to="/login" className="gallery-auth-btn">
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="gallery-page">

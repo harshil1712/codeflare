@@ -16,11 +16,6 @@ type ExportAction = "r2_only" | "r2_and_download" | "download_only";
 
 const app = new Hono<{ Bindings: Cloudflare.Env }>();
 
-app.on(["POST", "GET"], "/api/auth/*", (c) => {
-  const auth = createAuth(c.env.DB);
-  return auth.handler(c.req.raw);
-});
-
 // Security headers middleware
 app.use("/api/*", secureHeaders());
 
@@ -35,10 +30,17 @@ app.use(
       return origin;
     },
     allowMethods: ["POST", "GET", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
     maxAge: 86400,
   }),
 );
+
+// Better Auth handler ��� must be after CORS so auth endpoints receive correct headers
+app.on(["POST", "GET"], "/api/auth/*", (c) => {
+  const auth = createAuth(c.env.DB);
+  return auth.handler(c.req.raw);
+});
 
 // HTML escape function to prevent XSS
 function escapeHtml(text: string): string {
@@ -362,12 +364,18 @@ app.post("/api/screenshot", async (c) => {
         omitBackground: background === "transparent",
       });
 
-      // Store in R2 if requested
-      if (action === "r2_only" || action === "r2_and_download") {
-        const key = `screenshots/${Date.now()}-${crypto.randomUUID()}.png`;
-        await c.env.SCREENSHOTS.put(key, screenshot, {
-          httpMetadata: { contentType: "image/png" },
-        });
+    // Store in R2 if requested — requires an authenticated session
+    if (action === "r2_only" || action === "r2_and_download") {
+      const auth = createAuth(c.env.DB);
+      const session = await auth.api.getSession({ headers: c.req.raw.headers });
+      if (!session) {
+        return c.json({ error: "Authentication required to save screenshots" }, 401);
+      }
+
+      const key = `screenshots/${session.user.id}/${Date.now()}-${crypto.randomUUID()}.png`;
+      await c.env.SCREENSHOTS.put(key, screenshot, {
+        httpMetadata: { contentType: "image/png" },
+      });
 
         if (action === "r2_only") {
           return c.json({ success: true, key });
@@ -397,10 +405,16 @@ app.post("/api/screenshot", async (c) => {
   }
 });
 
-// List all saved screenshots
+// List all saved screenshots — requires authentication
 app.get("/api/screenshots", async (c) => {
+  const auth = createAuth(c.env.DB);
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) {
+    return c.json({ error: "Authentication required" }, 401);
+  }
+
   try {
-    const listed = await c.env.SCREENSHOTS.list({ prefix: "screenshots/" });
+    const listed = await c.env.SCREENSHOTS.list({ prefix: `screenshots/${session.user.id}/` });
     const screenshots = listed.objects.map((obj) => ({
       key: obj.key,
       uploaded: obj.uploaded.toISOString(),
@@ -413,14 +427,25 @@ app.get("/api/screenshots", async (c) => {
   }
 });
 
-// Serve a single screenshot from R2
+// Serve a single screenshot from R2 — requires authentication and ownership
 app.get("/api/screenshots/*", async (c) => {
+  const auth = createAuth(c.env.DB);
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) {
+    return c.json({ error: "Authentication required" }, 401);
+  }
+
   // Use the raw URL so percent-encoded slashes (%2F) are preserved before decoding,
-  // ensuring the full R2 key (e.g. "screenshots/foo.png") is reconstructed correctly.
+  // ensuring the full R2 key (e.g. "screenshots/userId/foo.png") is reconstructed correctly.
   const rawPath = new URL(c.req.raw.url).pathname;
   const key = decodeURIComponent(rawPath.replace(/^\/api\/screenshots\//, ""));
   if (!key) {
     return c.json({ error: "Missing screenshot key" }, 400);
+  }
+
+  // Verify the key belongs to the authenticated user
+  if (!key.startsWith(`screenshots/${session.user.id}/`)) {
+    return c.json({ error: "Forbidden" }, 403);
   }
 
   try {
@@ -431,7 +456,7 @@ app.get("/api/screenshots/*", async (c) => {
 
     const headers = new Headers();
     headers.set("Content-Type", "image/png");
-    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    headers.set("Cache-Control", "private, max-age=31536000, immutable");
 
     return new Response(object.body, { headers });
   } catch (error) {
@@ -440,12 +465,23 @@ app.get("/api/screenshots/*", async (c) => {
   }
 });
 
-// Delete a screenshot from R2
+// Delete a screenshot from R2 — requires authentication
 app.delete("/api/screenshots/*", async (c) => {
+  const auth = createAuth(c.env.DB);
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) {
+    return c.json({ error: "Authentication required" }, 401);
+  }
+
   const rawPath = new URL(c.req.raw.url).pathname;
   const key = decodeURIComponent(rawPath.replace(/^\/api\/screenshots\//, ""));
   if (!key) {
     return c.json({ error: "Missing screenshot key" }, 400);
+  }
+
+  // Verify the key belongs to the authenticated user
+  if (!key.startsWith(`screenshots/${session.user.id}/`)) {
+    return c.json({ error: "Forbidden" }, 403);
   }
 
   try {
