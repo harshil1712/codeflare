@@ -4,51 +4,50 @@ import { secureHeaders } from "hono/secure-headers";
 import puppeteer from "@cloudflare/puppeteer";
 import { createHighlighter, type ShikiTransformer } from "shiki";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
+import { createAuth } from "../lib/auth";
 
 const lineNumberTransformer: ShikiTransformer = {
   line(node, line) {
-    node.properties['data-line'] = line;
-  }
+    node.properties["data-line"] = line;
+  },
 };
 
 type ExportAction = "r2_only" | "r2_and_download" | "download_only";
 
-interface AppEnv {
-  Bindings: {
-    BROWSER: Fetcher;
-    SCREENSHOTS: R2Bucket;
-    RATE_LIMITER: RateLimit;
-  };
-}
+const app = new Hono<{ Bindings: Cloudflare.Env }>();
 
-const app = new Hono<AppEnv>();
+app.on(["POST", "GET"], "/api/auth/*", (c) => {
+  const auth = createAuth(c.env.DB);
+  return auth.handler(c.req.raw);
+});
 
 // Security headers middleware
 app.use("/api/*", secureHeaders());
 
 // CORS configuration - restrict to your domain(s) in production
 // Change this to your actual domain(s) before deploying
-app.use("/api/*", cors({
-  origin: (origin) => {
-    // Allow all origins in development, or specify your domains
-    // Example: return origin.endsWith('.yourdomain.com') ? origin : 'https://yourdomain.com';
-    return origin;
-  },
-  allowMethods: ["POST", "GET", "DELETE", "OPTIONS"],
-  allowHeaders: ["Content-Type"],
-  maxAge: 86400,
-}));
-
-
+app.use(
+  "/api/*",
+  cors({
+    origin: (origin) => {
+      // Allow all origins in development, or specify your domains
+      // Example: return origin.endsWith('.yourdomain.com') ? origin : 'https://yourdomain.com';
+      return origin;
+    },
+    allowMethods: ["POST", "GET", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type"],
+    maxAge: 86400,
+  }),
+);
 
 // HTML escape function to prevent XSS
 function escapeHtml(text: string): string {
   const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
   };
   return text.replace(/[&<>"']/g, (char) => map[char] || char);
 }
@@ -59,25 +58,34 @@ function isValidCssValue(value: string): boolean {
   const hexPattern = /^#[0-9a-fA-F]{3,8}$/;
   const rgbPattern = /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/;
   const gradientPattern = /^(linear|radial)-gradient\(([^()]*|\([^()]*\))*\)$/;
-  const namedColors = /^(transparent|black|white|red|green|blue|yellow|purple|pink|orange|gray|grey)$/i;
-  
-  return hexPattern.test(value) || 
-         rgbPattern.test(value) || 
-         gradientPattern.test(value) || 
-         namedColors.test(value);
+  const namedColors =
+    /^(transparent|black|white|red|green|blue|yellow|purple|pink|orange|gray|grey)$/i;
+
+  return (
+    hexPattern.test(value) ||
+    rgbPattern.test(value) ||
+    gradientPattern.test(value) ||
+    namedColors.test(value)
+  );
 }
 
 // Module-level cache for Shiki highlighters
-const highlighterCache = new Map<string, ReturnType<typeof createHighlighter>>();
+const highlighterCache = new Map<
+  string,
+  ReturnType<typeof createHighlighter>
+>();
 
 async function getHighlighter(theme: string, lang: string) {
   const key = `${theme}:${lang}`;
   if (!highlighterCache.has(key)) {
-    highlighterCache.set(key, createHighlighter({
-      themes: [theme],
-      langs: [lang],
-      engine: createJavaScriptRegexEngine(),
-    }));
+    highlighterCache.set(
+      key,
+      createHighlighter({
+        themes: [theme],
+        langs: [lang],
+        engine: createJavaScriptRegexEngine(),
+      }),
+    );
   }
   return highlighterCache.get(key)!;
 }
@@ -98,10 +106,16 @@ interface ScreenshotRequest {
 app.post("/api/screenshot", async (c) => {
   try {
     // Rate limiting via Cloudflare Rate Limiting binding
-    const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
+    const ip =
+      c.req.header("cf-connecting-ip") ||
+      c.req.header("x-forwarded-for") ||
+      "unknown";
     const { success } = await c.env.RATE_LIMITER.limit({ key: ip });
     if (!success) {
-      return c.json({ error: "Rate limit exceeded. Please try again later." }, 429);
+      return c.json(
+        { error: "Rate limit exceeded. Please try again later." },
+        429,
+      );
     }
 
     // Parse and validate JSON
@@ -146,22 +160,40 @@ app.post("/api/screenshot", async (c) => {
     }
 
     // Validate background CSS value
-    if (!background || typeof background !== "string" || !isValidCssValue(background)) {
+    if (
+      !background ||
+      typeof background !== "string" ||
+      !isValidCssValue(background)
+    ) {
       return c.json({ error: "Invalid background value" }, 400);
     }
 
     // Validate cardBackground CSS value
-    if (!cardBackground || typeof cardBackground !== "string" || !isValidCssValue(cardBackground)) {
+    if (
+      !cardBackground ||
+      typeof cardBackground !== "string" ||
+      !isValidCssValue(cardBackground)
+    ) {
       return c.json({ error: "Invalid cardBackground value" }, 400);
     }
 
     // Validate padding
-    if (typeof padding !== "number" || padding < 0 || padding > 200 || !Number.isFinite(padding)) {
+    if (
+      typeof padding !== "number" ||
+      padding < 0 ||
+      padding > 200 ||
+      !Number.isFinite(padding)
+    ) {
       return c.json({ error: "Invalid padding (must be 0-200)" }, 400);
     }
 
     // Validate fontSize
-    if (typeof fontSize !== "number" || fontSize < 8 || fontSize > 72 || !Number.isFinite(fontSize)) {
+    if (
+      typeof fontSize !== "number" ||
+      fontSize < 8 ||
+      fontSize > 72 ||
+      !Number.isFinite(fontSize)
+    ) {
       return c.json({ error: "Invalid fontSize (must be 8-72)" }, 400);
     }
 
@@ -182,13 +214,13 @@ app.post("/api/screenshot", async (c) => {
       theme: theme,
       transformers: showLineNumbers ? [lineNumberTransformer] : [],
     });
-    
+
     // Strip leading/trailing newlines inside <code> to prevent cursor offset
     // Also strip newlines between .line spans to prevent extra spacing
     const html = highlighted
-      .replace(/<code>\n/g, '<code>')
-      .replace(/\n<\/code>/g, '</code>')
-      .replace(/\n(?=<span class="line")/g, '');
+      .replace(/<code>\n/g, "<code>")
+      .replace(/\n<\/code>/g, "</code>")
+      .replace(/\n(?=<span class="line")/g, "");
 
     // Build self-contained HTML page for screenshot
     const screenshotHtml = `
@@ -313,10 +345,14 @@ app.post("/api/screenshot", async (c) => {
       const page = await browser.newPage();
 
       await page.setContent(screenshotHtml, { timeout: 10000 });
-      await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 2 });
+      await page.setViewport({
+        width: 1920,
+        height: 1080,
+        deviceScaleFactor: 2,
+      });
 
       // Screenshot just the container element for tight cropping
-      const container = await page.$('#container');
+      const container = await page.$("#container");
       if (!container) {
         return c.json({ error: "Container element not found" }, 500);
       }
@@ -356,7 +392,7 @@ app.post("/api/screenshot", async (c) => {
       {
         error: "Failed to generate screenshot",
       },
-      500
+      500,
     );
   }
 });
