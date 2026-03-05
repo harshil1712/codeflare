@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
+
 interface WindowCardProps {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   background?: string;
 }
 

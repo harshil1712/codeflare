@@ -2,7 +2,6 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
-  Outlet,
 } from "@tanstack/react-router";
 import { createElement } from "react";
 import RootLayout from "./components/RootLayout";
@@ -60,6 +59,3 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
-
-// Re-export Outlet for use in RootLayout
-export { Outlet };

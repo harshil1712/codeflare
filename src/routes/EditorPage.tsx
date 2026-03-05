@@ -8,7 +8,6 @@ import LanguageSelector from "../components/LanguageSelector";
 import ExportButton from "../components/ExportButton";
 import { BACKGROUND_PRESETS } from "../types";
 import type { ScreenshotOptions } from "../types";
-import "../App.css";
 
 const DEFAULT_CODE = `function greet(name: string) {
   return \`Hello, \${name}!\`;

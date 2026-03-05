@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "@tanstack/react-router";
-import { Trash, ArrowsOut, Lock, Image } from "@phosphor-icons/react";
-import { Banner, Button, Dialog, Empty } from "@cloudflare/kumo";
+import { Trash, ArrowsOut, Lock, Image, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { Banner, Button, Dialog, Empty, Input } from "@cloudflare/kumo";
 import { authClient } from "../../lib/auth-client";
-import type { ScreenshotMeta } from "../types";
+import type { ScreenshotMeta, SearchResponse } from "../types";
 
 interface GalleryResponse {
   screenshots: ScreenshotMeta[];
@@ -33,6 +33,14 @@ function GalleryPage() {
   const [error, setError] = useState<string | null>(null);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const [lightboxKey, setLightboxKey] = useState<string | null>(null);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const isAuthenticated = !!session;
 
@@ -65,6 +73,67 @@ function GalleryPage() {
       setLoading(false);
     }
   }, [fetchScreenshots, isAuthenticated, sessionLoading]);
+
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults(null);
+      setSearchError(null);
+      return;
+    }
+    // Abort any in-flight request before starting a new one
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setSearching(true);
+    setSearchError(null);
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`, {
+        credentials: "include",
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const body = (await res.json()) as { error?: string };
+        throw new Error(body.error || "Search failed");
+      }
+      const data = (await res.json()) as SearchResponse;
+      setSearchResults(data);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      setSearchError(err instanceof Error ? err.message : "Search failed");
+      setSearchResults(null);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  // Cleanup debounce timer and any in-flight search on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!value.trim()) {
+      setSearchResults(null);
+      setSearchError(null);
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      performSearch(value);
+    }, 600);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchResults(null);
+    setSearchError(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    abortRef.current?.abort();
+  };
 
   const handleDelete = async (key: string) => {
     setDeletingKey(key);
@@ -105,7 +174,11 @@ function GalleryPage() {
     );
   }
 
+  // For the lightbox footer, look in the full screenshots list first,
+  // then fall back to search results (which won't have date/size metadata).
   const lightboxShot = screenshots.find((s) => s.key === lightboxKey);
+
+  const isSearchActive = searchQuery.trim().length > 0;
 
   return (
     <div className="gallery-page">
@@ -115,10 +188,40 @@ function GalleryPage() {
           <p className="gallery-subtitle">
             {loading
               ? "Loading…"
-              : `${screenshots.length} screenshot${screenshots.length !== 1 ? "s" : ""} saved`}
+              : isSearchActive && searchResults
+                ? `${searchResults.data.length} result${searchResults.data.length !== 1 ? "s" : ""} found`
+                : `${screenshots.length} screenshot${screenshots.length !== 1 ? "s" : ""} saved`}
           </p>
         </div>
       </div>
+
+      <div className="gallery-search">
+        <div className="gallery-search-input-wrap">
+          <MagnifyingGlass size={16} weight="bold" className="gallery-search-icon" />
+          <Input
+            placeholder="Search your screenshots..."
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="gallery-search-input"
+          />
+          {searchQuery && (
+            <button
+              className="gallery-search-clear"
+              onClick={clearSearch}
+              aria-label="Clear search"
+            >
+              <X size={14} weight="bold" />
+            </button>
+          )}
+        </div>
+        {searching && <p className="gallery-search-status">Searching…</p>}
+      </div>
+
+      {searchError && (
+        <Banner variant="error" className="gallery-error-banner">
+          {searchError}
+        </Banner>
+      )}
 
       {error && (
         <Banner variant="error" className="gallery-error-banner">
@@ -133,7 +236,7 @@ function GalleryPage() {
         </Banner>
       )}
 
-      {!loading && !error && screenshots.length === 0 && (
+      {!loading && !error && screenshots.length === 0 && !isSearchActive && (
         <Empty
           icon={<Image size={48} weight="thin" />}
           title="No screenshots yet"
@@ -142,45 +245,87 @@ function GalleryPage() {
         />
       )}
 
-      {!loading && screenshots.length > 0 && (
+      {isSearchActive && searchResults && searchResults.data.length === 0 && (
+        <Empty
+          icon={<MagnifyingGlass size={48} weight="thin" />}
+          title="No results found"
+          description="Try a different search query."
+          size="lg"
+        />
+      )}
+
+      {!loading && (isSearchActive ? (searchResults?.data.length ?? 0) > 0 : screenshots.length > 0) && (
         <div className="gallery-grid">
-          {screenshots.map((shot) => (
-            <div key={shot.key} className="gallery-card">
-              <button
-                className="gallery-card-thumb"
-                onClick={() => setLightboxKey(shot.key)}
-                aria-label="View full size"
-              >
-                <img
-                  src={imgUrl(shot.key)}
-                  alt={`Screenshot saved ${formatDate(shot.uploaded)}`}
-                  className="gallery-card-img"
-                  loading="lazy"
-                />
-                <div className="gallery-card-overlay">
-                  <ArrowsOut size={22} weight="bold" />
+          {(isSearchActive && searchResults
+            ? searchResults.data.map((item) => (
+                <div key={item.file_id} className="gallery-card">
+                  <button
+                    className="gallery-card-thumb"
+                    onClick={() => setLightboxKey(item.key)}
+                    aria-label="View full size"
+                  >
+                    <img
+                      src={imgUrl(item.key)}
+                      alt="Search result screenshot"
+                      className="gallery-card-img"
+                      loading="lazy"
+                    />
+                    <div className="gallery-card-overlay">
+                      <ArrowsOut size={22} weight="bold" />
+                    </div>
+                  </button>
+                  <div className="gallery-card-info">
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      shape="square"
+                      icon={Trash}
+                      onClick={() => handleDelete(item.key)}
+                      disabled={deletingKey === item.key}
+                      aria-label="Delete screenshot"
+                      className="gallery-card-delete"
+                    />
+                  </div>
                 </div>
-              </button>
-              <div className="gallery-card-info">
-                <span className="gallery-card-date">
-                  {formatDate(shot.uploaded)}
-                </span>
-                <span className="gallery-card-size">
-                  {formatSize(shot.size)}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  shape="square"
-                  icon={Trash}
-                  onClick={() => handleDelete(shot.key)}
-                  disabled={deletingKey === shot.key}
-                  aria-label="Delete screenshot"
-                  className="gallery-card-delete"
-                />
-              </div>
-            </div>
-          ))}
+              ))
+            : screenshots.map((shot) => (
+                <div key={shot.key} className="gallery-card">
+                  <button
+                    className="gallery-card-thumb"
+                    onClick={() => setLightboxKey(shot.key)}
+                    aria-label="View full size"
+                  >
+                    <img
+                      src={imgUrl(shot.key)}
+                      alt={`Screenshot saved ${formatDate(shot.uploaded)}`}
+                      className="gallery-card-img"
+                      loading="lazy"
+                    />
+                    <div className="gallery-card-overlay">
+                      <ArrowsOut size={22} weight="bold" />
+                    </div>
+                  </button>
+                  <div className="gallery-card-info">
+                    <span className="gallery-card-date">
+                      {formatDate(shot.uploaded)}
+                    </span>
+                    <span className="gallery-card-size">
+                      {formatSize(shot.size)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      shape="square"
+                      icon={Trash}
+                      onClick={() => handleDelete(shot.key)}
+                      disabled={deletingKey === shot.key}
+                      aria-label="Delete screenshot"
+                      className="gallery-card-delete"
+                    />
+                  </div>
+                </div>
+              ))
+          )}
         </div>
       )}
 

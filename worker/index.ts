@@ -5,6 +5,7 @@ import puppeteer from "@cloudflare/puppeteer";
 import { createHighlighter, type ShikiTransformer } from "shiki";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import { createAuth } from "../lib/auth";
+import type { ScreenshotRequest } from "../src/types";
 
 const lineNumberTransformer: ShikiTransformer = {
   line(node, line) {
@@ -12,21 +13,18 @@ const lineNumberTransformer: ShikiTransformer = {
   },
 };
 
-type ExportAction = "r2_only" | "r2_and_download" | "download_only";
-
 const app = new Hono<{ Bindings: Cloudflare.Env }>();
 
 // Security headers middleware
 app.use("/api/*", secureHeaders());
 
-// CORS configuration - restrict to your domain(s) in production
-// Change this to your actual domain(s) before deploying
+// TODO: Tighten CORS before production — currently allows all origins.
+// Replace the origin callback with your actual domain(s), e.g.:
+//   origin: (origin) => origin.endsWith('.yourdomain.com') ? origin : 'https://yourdomain.com',
 app.use(
   "/api/*",
   cors({
     origin: (origin) => {
-      // Allow all origins in development, or specify your domains
-      // Example: return origin.endsWith('.yourdomain.com') ? origin : 'https://yourdomain.com';
       return origin;
     },
     allowMethods: ["POST", "GET", "DELETE", "OPTIONS"],
@@ -36,10 +34,30 @@ app.use(
   }),
 );
 
-// Better Auth handler ��� must be after CORS so auth endpoints receive correct headers
+// Better Auth handler — must be after CORS so auth endpoints receive correct headers
 app.on(["POST", "GET"], "/api/auth/*", (c) => {
   const auth = createAuth(c.env.DB);
   return auth.handler(c.req.raw);
+});
+
+// Rate limiting middleware for all non-auth API routes
+app.use("/api/*", async (c, next) => {
+  // Skip rate limiting for auth endpoints (handled by better-auth)
+  if (c.req.path.startsWith("/api/auth")) {
+    return next();
+  }
+  const ip =
+    c.req.header("cf-connecting-ip") ||
+    c.req.header("x-forwarded-for") ||
+    "unknown";
+  const { success } = await c.env.RATE_LIMITER.limit({ key: ip });
+  if (!success) {
+    return c.json(
+      { error: "Rate limit exceeded. Please try again later." },
+      429,
+    );
+  }
+  return next();
 });
 
 // HTML escape function to prevent XSS
@@ -92,34 +110,8 @@ async function getHighlighter(theme: string, lang: string) {
   return highlighterCache.get(key)!;
 }
 
-interface ScreenshotRequest {
-  code: string;
-  language: string;
-  theme: string;
-  background: string;
-  padding: number;
-  fontSize: number;
-  showLineNumbers: boolean;
-  windowTitle: string;
-  cardBackground: string;
-  action?: ExportAction;
-}
-
 app.post("/api/screenshot", async (c) => {
   try {
-    // Rate limiting via Cloudflare Rate Limiting binding
-    const ip =
-      c.req.header("cf-connecting-ip") ||
-      c.req.header("x-forwarded-for") ||
-      "unknown";
-    const { success } = await c.env.RATE_LIMITER.limit({ key: ip });
-    if (!success) {
-      return c.json(
-        { error: "Rate limit exceeded. Please try again later." },
-        429,
-      );
-    }
-
     // Parse and validate JSON
     let body: ScreenshotRequest;
     try {
@@ -364,18 +356,23 @@ app.post("/api/screenshot", async (c) => {
         omitBackground: background === "transparent",
       });
 
-    // Store in R2 if requested — requires an authenticated session
-    if (action === "r2_only" || action === "r2_and_download") {
-      const auth = createAuth(c.env.DB);
-      const session = await auth.api.getSession({ headers: c.req.raw.headers });
-      if (!session) {
-        return c.json({ error: "Authentication required to save screenshots" }, 401);
-      }
+      // Store in R2 if requested — requires an authenticated session
+      if (action === "r2_only" || action === "r2_and_download") {
+        const auth = createAuth(c.env.DB);
+        const session = await auth.api.getSession({
+          headers: c.req.raw.headers,
+        });
+        if (!session) {
+          return c.json(
+            { error: "Authentication required to save screenshots" },
+            401,
+          );
+        }
 
-      const key = `screenshots/${session.user.id}/${Date.now()}-${crypto.randomUUID()}.png`;
-      await c.env.SCREENSHOTS.put(key, screenshot, {
-        httpMetadata: { contentType: "image/png" },
-      });
+        const key = `screenshots/${session.user.id}/${Date.now()}-${crypto.randomUUID()}.png`;
+        await c.env.SCREENSHOTS.put(key, screenshot, {
+          httpMetadata: { contentType: "image/png" },
+        });
 
         if (action === "r2_only") {
           return c.json({ success: true, key });
@@ -414,7 +411,9 @@ app.get("/api/screenshots", async (c) => {
   }
 
   try {
-    const listed = await c.env.SCREENSHOTS.list({ prefix: `screenshots/${session.user.id}/` });
+    const listed = await c.env.SCREENSHOTS.list({
+      prefix: `screenshots/${session.user.id}/`,
+    });
     const screenshots = listed.objects.map((obj) => ({
       key: obj.key,
       uploaded: obj.uploaded.toISOString(),
@@ -493,11 +492,57 @@ app.delete("/api/screenshots/*", async (c) => {
   }
 });
 
+// AI Search — search saved screenshots by code content
+const AI_SEARCH_INSTANCE = "codeflare-search";
+
+app.get("/api/search", async (c) => {
+  const auth = createAuth(c.env.DB);
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!session) {
+    return c.json({ error: "Authentication required" }, 401);
+  }
+
+  const query = c.req.query("q");
+  if (!query || typeof query !== "string" || query.trim().length === 0) {
+    return c.json({ error: "Query parameter 'q' is required" }, 400);
+  }
+
+  if (query.length > 500) {
+    return c.json({ error: "Query too long (max 500 characters)" }, 400);
+  }
+
+  const userPrefix = `screenshots/${session.user.id}/`;
+
+  try {
+    const result = await c.env.AI.autorag(AI_SEARCH_INSTANCE).search({
+      query: query.trim(),
+      max_num_results: 10,
+      rewrite_query: true,
+      filters: {
+        type: "and",
+        filters: [
+          { type: "gt", key: "folder", value: `${userPrefix}/` },
+          { type: "lte", key: "folder", value: `${userPrefix}z` },
+        ],
+      },
+    });
+
+    return c.json({
+      search_query: result.search_query,
+      data: result.data,
+      has_more: result.has_more,
+    });
+  } catch (error) {
+    console.error("AI Search error:", error);
+    return c.json({ error: "Search failed" }, 500);
+  }
+});
+
 app.get("/api/", (c) => {
   return c.json({
     name: "CodeFlare API",
     version: "1.0.0",
-    endpoints: ["/api/screenshot", "/api/screenshots"],
+    endpoints: ["/api/screenshot", "/api/screenshots", "/api/search"],
   });
 });
 

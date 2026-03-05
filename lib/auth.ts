@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { env } from "cloudflare:workers";
 import * as schema from "../src/db/schema";
 import { drizzle } from "drizzle-orm/d1";
 
@@ -16,7 +15,5 @@ export function createAuth(db: D1Database) {
     },
   });
 }
-
-export const auth = createAuth(env.DB);
 
 export type Auth = ReturnType<typeof createAuth>;
