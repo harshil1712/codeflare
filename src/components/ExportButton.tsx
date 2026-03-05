@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@cloudflare/kumo";
 import { ArrowSquareOut, CloudArrowUp, DownloadSimple, Lock } from "@phosphor-icons/react";
 import { authClient } from "../../lib/auth-client";
+import { toastManager } from "../toast";
 import type { ExportAction, ScreenshotOptions } from "../types";
 
 interface ExportButtonProps {
@@ -23,15 +24,9 @@ function triggerDownload(blob: Blob) {
 
 function ExportButton({ options, disabled }: ExportButtonProps) {
   const [loadingAction, setLoadingAction] = useState<ExportAction | null>(null);
-  const [savedToR2, setSavedToR2] = useState(false);
   const { data: session } = authClient.useSession();
 
   const isAuthenticated = !!session;
-
-  const showSavedToast = () => {
-    setSavedToR2(true);
-    setTimeout(() => setSavedToR2(false), 4000);
-  };
 
   const handleExport = async (action: ExportAction) => {
     if (!options.code) return;
@@ -52,21 +47,24 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
       }
 
       if (action === "r2_only") {
-        showSavedToast();
+        toastManager.add({ title: "Saved!", description: "View in Gallery →", type: "success" });
       } else {
         const blob = await response.blob();
         triggerDownload(blob);
         if (action === "r2_and_download") {
-          showSavedToast();
+          toastManager.add({ title: "Saved!", description: "View in Gallery →", type: "success" });
         }
       }
     } catch (error) {
       console.error("Export error:", error);
-      alert(
-        error instanceof Error
+      toastManager.add({
+        title: "Export failed",
+        description: error instanceof Error
           ? error.message
           : "Failed to generate screenshot. Please try again.",
-      );
+        type: "error",
+        priority: "high",
+      });
     } finally {
       setLoadingAction(null);
     }
@@ -76,15 +74,6 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
 
   return (
     <div className="export-buttons">
-      {savedToR2 && (
-        <p className="export-toast">
-          Saved!{" "}
-          <Link to="/gallery" className="export-toast-link">
-            View in Gallery
-          </Link>
-        </p>
-      )}
-
       {isAuthenticated ? (
         <>
           <Button

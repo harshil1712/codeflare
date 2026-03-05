@@ -6,9 +6,10 @@ import {
 } from "@tanstack/react-router";
 import { createElement } from "react";
 import RootLayout from "./components/RootLayout";
-import EditorPage from "./App";
-import GalleryPage from "./components/Gallery";
-import AuthPage from "./components/AuthPage";
+import EditorPage from "./routes/EditorPage";
+import GalleryPage from "./routes/GalleryPage";
+import SignInPage from "./routes/SignInPage";
+import SignUpPage from "./routes/SignUpPage";
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -35,10 +36,21 @@ const galleryRoute = createRoute({
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
-  component: AuthPage,
+  component: SignInPage,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, galleryRoute, loginRoute]);
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/register",
+  component: SignUpPage,
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  galleryRoute,
+  loginRoute,
+  registerRoute,
+]);
 
 export const router = createRouter({ routeTree });
 

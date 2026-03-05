@@ -1,3 +1,4 @@
+import { Label } from "@cloudflare/kumo";
 import { BACKGROUND_PRESETS } from "../types";
 
 interface BackgroundSelectorProps {
@@ -8,7 +9,7 @@ interface BackgroundSelectorProps {
 function BackgroundSelector({ value, onChange }: BackgroundSelectorProps) {
   return (
     <div className="control-group">
-      <label className="control-label">Background</label>
+      <Label className="control-label">Background</Label>
       <div className="background-grid">
         {BACKGROUND_PRESETS.map((preset) => (
           <button

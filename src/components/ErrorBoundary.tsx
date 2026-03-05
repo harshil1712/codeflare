@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { Button } from "@cloudflare/kumo";
 import type { ErrorInfo, ReactNode } from "react";
 
 interface Props {
@@ -40,21 +41,14 @@ export class ErrorBoundary extends Component<Props, State> {
           <p style={{ marginTop: "1rem", color: "rgba(255, 255, 255, 0.7)" }}>
             {this.state.error?.message || "An unexpected error occurred"}
           </p>
-          <button
+          <Button
+            variant="secondary"
+            size="base"
             onClick={() => window.location.reload()}
-            style={{
-              marginTop: "2rem",
-              padding: "0.75rem 1.5rem",
-              background: "rgba(255, 255, 255, 0.1)",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              borderRadius: "8px",
-              color: "white",
-              cursor: "pointer",
-              fontSize: "1rem",
-            }}
+            style={{ marginTop: "2rem" }}
           >
             Reload Page
-          </button>
+          </Button>
         </div>
       );
     }

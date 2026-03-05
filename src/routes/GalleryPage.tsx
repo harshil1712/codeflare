@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
-import { Trash, X, ArrowsOut, Lock } from "@phosphor-icons/react";
+import { Trash, ArrowsOut, Lock, Image } from "@phosphor-icons/react";
+import { Banner, Button, Dialog, Empty } from "@cloudflare/kumo";
 import { authClient } from "../../lib/auth-client";
 import type { ScreenshotMeta } from "../types";
 
@@ -41,14 +42,17 @@ function GalleryPage() {
     try {
       const res = await fetch("/api/screenshots", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load screenshots");
-      const data = await res.json() as GalleryResponse;
+      const data = (await res.json()) as GalleryResponse;
       // Sort newest first
       const sorted = [...data.screenshots].sort(
-        (a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime(),
+        (a, b) =>
+          new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime(),
       );
       setScreenshots(sorted);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load screenshots");
+      setError(
+        err instanceof Error ? err.message : "Failed to load screenshots",
+      );
     } finally {
       setLoading(false);
     }
@@ -61,15 +65,6 @@ function GalleryPage() {
       setLoading(false);
     }
   }, [fetchScreenshots, isAuthenticated, sessionLoading]);
-
-  // Close lightbox on Escape
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightboxKey(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   const handleDelete = async (key: string) => {
     setDeletingKey(key);
@@ -102,13 +97,15 @@ function GalleryPage() {
           <p className="gallery-auth-body">
             Your saved screenshots are private. Sign in to access them.
           </p>
-          <Link to="/login" className="gallery-auth-btn">
-            Sign in
+          <Link to="/login">
+            <Button variant="primary">Sign in</Button>
           </Link>
         </div>
       </div>
     );
   }
+
+  const lightboxShot = screenshots.find((s) => s.key === lightboxKey);
 
   return (
     <div className="gallery-page">
@@ -124,28 +121,25 @@ function GalleryPage() {
       </div>
 
       {error && (
-        <div className="gallery-error">
-          <p>{error}</p>
-          <button className="gallery-retry-btn" onClick={fetchScreenshots}>
+        <Banner variant="error" className="gallery-error-banner">
+          {error}
+          <Button
+            variant="secondary-destructive"
+            size="sm"
+            onClick={fetchScreenshots}
+          >
             Retry
-          </button>
-        </div>
+          </Button>
+        </Banner>
       )}
 
       {!loading && !error && screenshots.length === 0 && (
-        <div className="gallery-empty">
-          <div className="gallery-empty-icon">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <rect x="6" y="10" width="36" height="28" rx="4" stroke="currentColor" strokeWidth="2" />
-              <circle cx="18" cy="22" r="4" stroke="currentColor" strokeWidth="2" />
-              <path d="M6 32l10-8 8 6 6-5 12 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <p className="gallery-empty-title">No screenshots yet</p>
-          <p className="gallery-empty-body">
-            Use the <strong>Save to R2</strong> or <strong>Save &amp; Download</strong> buttons in the editor to save screenshots here.
-          </p>
-        </div>
+        <Empty
+          icon={<Image size={48} weight="thin" />}
+          title="No screenshots yet"
+          description='Use the "Save to R2" or "Save & Download" buttons in the editor to save screenshots here.'
+          size="lg"
+        />
       )}
 
       {!loading && screenshots.length > 0 && (
@@ -168,65 +162,67 @@ function GalleryPage() {
                 </div>
               </button>
               <div className="gallery-card-info">
-                <span className="gallery-card-date">{formatDate(shot.uploaded)}</span>
-                <span className="gallery-card-size">{formatSize(shot.size)}</span>
-                <button
-                  className="gallery-card-delete"
+                <span className="gallery-card-date">
+                  {formatDate(shot.uploaded)}
+                </span>
+                <span className="gallery-card-size">
+                  {formatSize(shot.size)}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  shape="square"
+                  icon={Trash}
                   onClick={() => handleDelete(shot.key)}
                   disabled={deletingKey === shot.key}
                   aria-label="Delete screenshot"
-                >
-                  <Trash size={15} weight="bold" />
-                </button>
+                  className="gallery-card-delete"
+                />
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {lightboxKey && (
-        <div
-          className="gallery-lightbox"
-          onClick={() => setLightboxKey(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Screenshot preview"
-        >
-          <div className="gallery-lightbox-inner" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="gallery-lightbox-close"
-              onClick={() => setLightboxKey(null)}
-              aria-label="Close preview"
-            >
-              <X size={20} weight="bold" />
-            </button>
+      <Dialog.Root
+        open={!!lightboxKey}
+        onOpenChange={(open) => {
+          if (!open) setLightboxKey(null);
+        }}
+      >
+        <Dialog size="xl" className="gallery-lightbox-dialog">
+          <button
+            className="gallery-lightbox-close"
+            onClick={() => setLightboxKey(null)}
+            aria-label="Close preview"
+          >
+            ×
+          </button>
+          {lightboxKey && (
             <img
               src={imgUrl(lightboxKey)}
               alt="Full size screenshot"
               className="gallery-lightbox-img"
             />
+          )}
+          {lightboxShot && (
             <div className="gallery-lightbox-footer">
-              {(() => {
-                const shot = screenshots.find((s) => s.key === lightboxKey);
-                return shot ? (
-                  <>
-                    <span>{formatDate(shot.uploaded)}</span>
-                    <span>{formatSize(shot.size)}</span>
-                    <button
-                      className="gallery-lightbox-delete"
-                      onClick={() => handleDelete(lightboxKey)}
-                      disabled={deletingKey === lightboxKey}
-                    >
-                      <Trash size={14} weight="bold" />
-                      {deletingKey === lightboxKey ? "Deleting…" : "Delete"}
-                    </button>
-                  </>
-                ) : null;
-              })()}
+              <span>{formatDate(lightboxShot.uploaded)}</span>
+              <span>{formatSize(lightboxShot.size)}</span>
+              <Button
+                variant="destructive"
+                size="sm"
+                icon={Trash}
+                onClick={() => handleDelete(lightboxKey!)}
+                disabled={deletingKey === lightboxKey}
+                className="gallery-lightbox-delete-btn"
+              >
+                {deletingKey === lightboxKey ? "Deleting…" : "Delete"}
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </Dialog>
+      </Dialog.Root>
     </div>
   );
 }

@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
-import { Input, Surface, Switch } from "@cloudflare/kumo";
-import Preview from "./components/Preview";
-import ThemeSelector from "./components/ThemeSelector";
-import BackgroundSelector from "./components/BackgroundSelector";
-import LanguageSelector from "./components/LanguageSelector";
-import ExportButton from "./components/ExportButton";
-import { BACKGROUND_PRESETS } from "./types";
-import type { ScreenshotOptions } from "./types";
-import "./App.css";
+import { Input, Label, Surface, Switch } from "@cloudflare/kumo";
+import { Slider } from "@cloudflare/kumo/primitives/slider";
+import Preview from "../components/Preview";
+import ThemeSelector from "../components/ThemeSelector";
+import BackgroundSelector from "../components/BackgroundSelector";
+import LanguageSelector from "../components/LanguageSelector";
+import ExportButton from "../components/ExportButton";
+import { BACKGROUND_PRESETS } from "../types";
+import type { ScreenshotOptions } from "../types";
+import "../App.css";
 
 const DEFAULT_CODE = `function greet(name: string) {
   return \`Hello, \${name}!\`;
@@ -79,11 +80,9 @@ function EditorPage() {
           <h2 className="section-title">Customization</h2>
 
           <div className="control-group">
-            <label className="control-label" htmlFor="window-title">
-              Window Title
-            </label>
             <Input
               id="window-title"
+              label="Window Title"
               type="text"
               value={windowTitle}
               onChange={(e) => setWindowTitle(e.target.value)}
@@ -96,35 +95,41 @@ function EditorPage() {
           <ThemeSelector value={theme} onChange={setTheme} />
 
           <div className="control-group">
-            <label className="control-label" htmlFor="font-size">
-              Font Size: {fontSize}px
-            </label>
-            <input
-              id="font-size"
-              type="range"
-              min="10"
-              max="24"
+            <Label className="control-label">Font Size: {fontSize}px</Label>
+            <Slider.Root
+              min={10}
+              max={24}
+              step={1}
               value={fontSize}
-              onChange={(e) => setFontSize(Number(e.target.value))}
-              className="control-range"
+              onValueChange={(v) => setFontSize(Array.isArray(v) ? v[0] : v)}
               aria-label={`Font size: ${fontSize} pixels`}
-            />
+            >
+              <Slider.Control>
+                <Slider.Track>
+                  <Slider.Indicator />
+                  <Slider.Thumb />
+                </Slider.Track>
+              </Slider.Control>
+            </Slider.Root>
           </div>
 
           <div className="control-group">
-            <label className="control-label" htmlFor="padding">
-              Padding: {padding}px
-            </label>
-            <input
-              id="padding"
-              type="range"
-              min="16"
-              max="96"
+            <Label className="control-label">Padding: {padding}px</Label>
+            <Slider.Root
+              min={16}
+              max={96}
+              step={1}
               value={padding}
-              onChange={(e) => setPadding(Number(e.target.value))}
-              className="control-range"
+              onValueChange={(v) => setPadding(Array.isArray(v) ? v[0] : v)}
               aria-label={`Padding: ${padding} pixels`}
-            />
+            >
+              <Slider.Control>
+                <Slider.Track>
+                  <Slider.Indicator />
+                  <Slider.Thumb />
+                </Slider.Track>
+              </Slider.Control>
+            </Slider.Root>
           </div>
 
           <div className="control-group">
@@ -151,19 +156,22 @@ function EditorPage() {
           </div>
 
           <div className="control-group">
-            <label className="control-label" htmlFor="card-opacity">
-              Card Opacity: {cardOpacity}%
-            </label>
-            <input
-              id="card-opacity"
-              type="range"
-              min="0"
-              max="100"
+            <Label className="control-label">Card Opacity: {cardOpacity}%</Label>
+            <Slider.Root
+              min={0}
+              max={100}
+              step={1}
               value={cardOpacity}
-              onChange={(e) => setCardOpacity(Number(e.target.value))}
-              className="control-range"
+              onValueChange={(v) => setCardOpacity(Array.isArray(v) ? v[0] : v)}
               aria-label={`Card opacity: ${cardOpacity} percent`}
-            />
+            >
+              <Slider.Control>
+                <Slider.Track>
+                  <Slider.Indicator />
+                  <Slider.Thumb />
+                </Slider.Track>
+              </Slider.Control>
+            </Slider.Root>
           </div>
 
           <BackgroundSelector value={background} onChange={setBackground} />
