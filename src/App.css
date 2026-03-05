@@ -165,60 +165,61 @@
 
 /* ─── Slider primitive styling ────────────────────────────── */
 
-[data-slider-root] {
-  position: relative;
+.slider-root {
   display: flex;
   align-items: center;
   touch-action: none;
   user-select: none;
+  width: 100%;
 }
 
-[data-slider-control] {
+/* Control is the positioning root for the thumb (position: absolute) */
+.slider-control {
+  position: relative;
   display: flex;
   align-items: center;
   flex: 1;
-  height: 20px;
+  height: 28px;
   cursor: pointer;
 }
 
-[data-slider-track] {
-  position: relative;
+/* Track runs horizontally inside the control */
+.slider-track {
+  display: flex;
+  align-items: center;
   flex: 1;
   height: 4px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
 }
 
-[data-slider-indicator] {
-  position: absolute;
-  left: 0;
-  top: 0;
+/* Indicator fills from left edge to current value (width set inline by base-ui) */
+.slider-indicator {
   height: 100%;
   background: #F6821F;
   border-radius: 2px;
+  min-width: 0;
 }
 
-[data-slider-thumb] {
-  position: absolute;
-  top: 50%;
-  width: 15px;
-  height: 15px;
-  transform: translateY(-50%);
+/* Thumb is absolutely positioned by base-ui relative to the control */
+.slider-thumb {
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #F6821F;
   cursor: grab;
-  box-shadow: 0 0 0 3px rgba(246, 130, 31, 0.2);
+  box-shadow: 0 0 0 3px rgba(246, 130, 31, 0.25);
   transition: box-shadow 0.2s;
   outline: none;
 }
 
-[data-slider-thumb]:hover,
-[data-slider-thumb][data-active] {
-  box-shadow: 0 0 0 4px rgba(246, 130, 31, 0.3);
+.slider-thumb:hover,
+.slider-thumb[data-active] {
+  box-shadow: 0 0 0 5px rgba(246, 130, 31, 0.35);
 }
 
-[data-slider-thumb]:focus-visible {
-  box-shadow: 0 0 0 4px rgba(246, 130, 31, 0.45);
+.slider-thumb:focus-visible {
+  box-shadow: 0 0 0 5px rgba(246, 130, 31, 0.5);
 }
 
 .control-color {

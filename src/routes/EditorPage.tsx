@@ -96,6 +96,7 @@ function EditorPage() {
           <div className="control-group">
             <Label className="control-label">Font Size: {fontSize}px</Label>
             <Slider.Root
+              className="slider-root"
               min={10}
               max={24}
               step={1}
@@ -103,10 +104,10 @@ function EditorPage() {
               onValueChange={(v) => setFontSize(Array.isArray(v) ? v[0] : v)}
               aria-label={`Font size: ${fontSize} pixels`}
             >
-              <Slider.Control>
-                <Slider.Track>
-                  <Slider.Indicator />
-                  <Slider.Thumb />
+              <Slider.Control className="slider-control">
+                <Slider.Track className="slider-track">
+                  <Slider.Indicator className="slider-indicator" />
+                  <Slider.Thumb className="slider-thumb" />
                 </Slider.Track>
               </Slider.Control>
             </Slider.Root>
@@ -115,6 +116,7 @@ function EditorPage() {
           <div className="control-group">
             <Label className="control-label">Padding: {padding}px</Label>
             <Slider.Root
+              className="slider-root"
               min={16}
               max={96}
               step={1}
@@ -122,10 +124,10 @@ function EditorPage() {
               onValueChange={(v) => setPadding(Array.isArray(v) ? v[0] : v)}
               aria-label={`Padding: ${padding} pixels`}
             >
-              <Slider.Control>
-                <Slider.Track>
-                  <Slider.Indicator />
-                  <Slider.Thumb />
+              <Slider.Control className="slider-control">
+                <Slider.Track className="slider-track">
+                  <Slider.Indicator className="slider-indicator" />
+                  <Slider.Thumb className="slider-thumb" />
                 </Slider.Track>
               </Slider.Control>
             </Slider.Root>
@@ -157,6 +159,7 @@ function EditorPage() {
           <div className="control-group">
             <Label className="control-label">Card Opacity: {cardOpacity}%</Label>
             <Slider.Root
+              className="slider-root"
               min={0}
               max={100}
               step={1}
@@ -164,10 +167,10 @@ function EditorPage() {
               onValueChange={(v) => setCardOpacity(Array.isArray(v) ? v[0] : v)}
               aria-label={`Card opacity: ${cardOpacity} percent`}
             >
-              <Slider.Control>
-                <Slider.Track>
-                  <Slider.Indicator />
-                  <Slider.Thumb />
+              <Slider.Control className="slider-control">
+                <Slider.Track className="slider-track">
+                  <Slider.Indicator className="slider-indicator" />
+                  <Slider.Thumb className="slider-thumb" />
                 </Slider.Track>
               </Slider.Control>
             </Slider.Root>
