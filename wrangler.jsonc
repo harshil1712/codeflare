@@ -42,7 +42,8 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_id": "DATABASE_ID",
+			"database_name": "codeflare",
+			"database_id": "5367b682-7d65-4f63-b0f9-9d17aa5f9cd4",
 			"migrations_dir": "./drizzle"
 		}
 	]
