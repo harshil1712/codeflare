@@ -1,0 +1,23 @@
+package.json
+  s_b1b9737eb51df1::t_0b92cbfa9b5ba2 56-57
+.node-version
+  s_b1b9737eb51df1::t_fa5118491369de 1
+AGENTS.md
+  s_b1b9737eb51df1::t_7f269001b91719 281-284
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6ed5b28331e8b607f336db5c8f632dbf0b6d0245",
+  "prompts": {},
+  "sessions": {
+    "s_b1b9737eb51df1": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a18388-707b-75d8-8d48-92033dad906e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Harshil Agrawal <harshil@cloudflare.com>"
+    }
+  }
+}
