@@ -1,6 +1,8 @@
 import { Select } from "@cloudflare/kumo";
 import { COMMON_LANGUAGES } from "../types";
 
+const LANGUAGE_ITEMS = Object.fromEntries(COMMON_LANGUAGES.map((lang) => [lang.id, lang.name]));
+
 interface LanguageSelectorProps {
   value: string;
   onChange: (language: string) => void;
@@ -8,15 +10,14 @@ interface LanguageSelectorProps {
 
 function LanguageSelector({ value, onChange }: LanguageSelectorProps) {
   return (
-    <div className="control-group">
-      <Select label="Language" value={value} onValueChange={(val) => onChange(val as string)}>
-        {COMMON_LANGUAGES.map((lang) => (
-          <Select.Option key={lang.id} value={lang.id}>
-            {lang.name}
-          </Select.Option>
-        ))}
-      </Select>
-    </div>
+    <Select
+      aria-label="Language"
+      size="sm"
+      className="inspector-control"
+      items={LANGUAGE_ITEMS}
+      value={value}
+      onValueChange={(val) => onChange(val as string)}
+    />
   );
 }
 

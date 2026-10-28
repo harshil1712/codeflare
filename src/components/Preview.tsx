@@ -1,7 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { createHighlighter, type Highlighter } from "shiki";
-import Editor from "react-simple-code-editor";
+import EditorModule from "react-simple-code-editor";
 import WindowCard from "./WindowCard";
+
+// react-simple-code-editor ships CommonJS (`exports.default = Editor`). The production bundle's
+// interop hands back the module object instead of the component, so unwrap `default` if present.
+const Editor =
+  (EditorModule as unknown as { default?: typeof EditorModule }).default ?? EditorModule;
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

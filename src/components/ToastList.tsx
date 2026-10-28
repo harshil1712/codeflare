@@ -5,7 +5,7 @@ function ToastList() {
   return (
     <>
       {toasts.map((toast: Toast.Root.ToastObject) => (
-        <Toast.Root key={toast.id} toast={toast} className="toast-root">
+        <Toast.Root key={toast.id} toast={toast}>
           <Toasty>
             {toast.title && <Toast.Title>{toast.title}</Toast.Title>}
             {toast.description && <Toast.Description>{toast.description}</Toast.Description>}

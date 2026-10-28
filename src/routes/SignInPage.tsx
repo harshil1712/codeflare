@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link, useRouter } from "@tanstack/react-router";
-import { Banner, Button, Input, SensitiveInput } from "@cloudflare/kumo";
+import { useRouter } from "@tanstack/react-router";
+import { Input, SensitiveInput } from "@cloudflare/kumo";
 import { authClient } from "../../lib/auth-client";
+import AuthCard from "../components/AuthCard";
 
 function SignInPage() {
   const router = useRouter();
@@ -16,15 +17,11 @@ function SignInPage() {
     setLoading(true);
 
     try {
-      const { error: signInError } = await authClient.signIn.email({
-        email,
-        password,
-      });
+      const { error: signInError } = await authClient.signIn.email({ email, password });
       if (signInError) {
         setError(signInError.message ?? "Sign in failed. Please check your credentials.");
         return;
       }
-
       await router.navigate({ to: "/" });
     } finally {
       setLoading(false);
@@ -32,56 +29,37 @@ function SignInPage() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-card-header">
-          <h2 className="auth-title">Sign in to CodeFlare</h2>
-          <p className="auth-subtitle">Sign in to save screenshots and access your gallery.</p>
-        </div>
-
-        <form className="auth-form" onSubmit={handleSubmit} noValidate>
-          <Input
-            id="auth-email"
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            required
-            autoComplete="email"
-          />
-
-          <SensitiveInput
-            id="auth-password"
-            label="Password"
-            value={password}
-            onValueChange={setPassword}
-            placeholder="Your password"
-            required
-            autoComplete="current-password"
-          />
-
-          {error && <Banner variant="error">{error}</Banner>}
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="base"
-            disabled={loading}
-            className="auth-submit"
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </Button>
-        </form>
-
-        <p className="auth-toggle">
-          Don&apos;t have an account?{" "}
-          <Link to="/register" className="auth-toggle-link">
-            Sign up
-          </Link>
-        </p>
-      </div>
-    </div>
+    <AuthCard
+      title="Welcome back"
+      subtitle="Sign in to save screenshots and access your gallery."
+      submitLabel="Sign in"
+      loading={loading}
+      error={error}
+      onSubmit={handleSubmit}
+      switchPrompt="Don't have an account?"
+      switchLabel="Sign up"
+      switchHref="/register"
+    >
+      <Input
+        id="auth-email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="you@example.com"
+        required
+        autoComplete="email"
+      />
+      <SensitiveInput
+        id="auth-password"
+        label="Password"
+        value={password}
+        onValueChange={setPassword}
+        placeholder="Your password"
+        required
+        autoComplete="current-password"
+      />
+    </AuthCard>
   );
 }
 

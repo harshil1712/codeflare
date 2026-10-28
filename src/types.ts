@@ -8,21 +8,36 @@ export interface ThemeOption {
   name: string;
 }
 
+// Curated from uiGradients (MIT, https://uigradients.com): warm, varied hues plus a dark row.
+// Each value is a single linear-gradient() so it passes the worker's isValidCssValue() check.
 export const BACKGROUND_PRESETS: BackgroundPreset[] = [
-  { name: "Cloudflare Light", gradient: "linear-gradient(135deg, #fef7ed 0%, #fffbf5 100%)" },
-  { name: "Cloudflare Dark", gradient: "linear-gradient(135deg, #1a1209 0%, #2a2927 100%)" },
-  { name: "Sunset", gradient: "linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)" },
-  { name: "Ocean", gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
-  { name: "Purple Haze", gradient: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)" },
-  { name: "Midnight", gradient: "linear-gradient(135deg, #141e30 0%, #243b55 100%)" },
-  { name: "Forest", gradient: "linear-gradient(135deg, #134e5e 0%, #71b280 100%)" },
-  { name: "Peach", gradient: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)" },
-  { name: "Sky", gradient: "linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)" },
-  { name: "Candy", gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" },
-  { name: "Dark", gradient: "linear-gradient(135deg, #232526 0%, #414345 100%)" },
-  { name: "Light", gradient: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)" },
+  // Vivid
+  { name: "Radar", gradient: "linear-gradient(135deg, #a770ef, #cf8bf3, #fdb99b)" },
+  { name: "Blush", gradient: "linear-gradient(135deg, #b24592, #f15f79)" },
+  { name: "Day Tripper", gradient: "linear-gradient(135deg, #f857a6, #ff5858)" },
+  { name: "Sweet Morning", gradient: "linear-gradient(135deg, #ff5f6d, #ffc371)" },
+  { name: "Ed's Sunset", gradient: "linear-gradient(135deg, #ff7e5f, #feb47b)" },
+  { name: "Mango", gradient: "linear-gradient(135deg, #ffe259, #ffa751)" },
+  { name: "Wiretap", gradient: "linear-gradient(135deg, #8a2387, #e94057, #f27121)" },
+  // Soft
+  { name: "Anamnisar", gradient: "linear-gradient(135deg, #9796f0, #fbc7d4)" },
+  { name: "Almost", gradient: "linear-gradient(135deg, #ddd6f3, #faaca8)" },
+  { name: "Roseanna", gradient: "linear-gradient(135deg, #ffafbd, #ffc3a0)" },
+  { name: "Tranquil", gradient: "linear-gradient(135deg, #eecda3, #ef629f)" },
+  { name: "Moonrise", gradient: "linear-gradient(135deg, #dae2f8, #d6a4a4)" },
+  { name: "Pale Wood", gradient: "linear-gradient(135deg, #eacda3, #d6ae7b)" },
+  { name: "Peach Sea", gradient: "linear-gradient(135deg, #e6ae8c, #a8cecf)" },
+  // Dark
+  { name: "Witching Hour", gradient: "linear-gradient(135deg, #c31432, #240b36)" },
+  { name: "Celestial", gradient: "linear-gradient(135deg, #c33764, #1d2671)" },
+  { name: "eXpresso", gradient: "linear-gradient(135deg, #ad5389, #3c1053)" },
+  { name: "Mauve", gradient: "linear-gradient(135deg, #42275a, #734b6d)" },
+  { name: "Taran Tado", gradient: "linear-gradient(135deg, #23074d, #cc5333)" },
+  { name: "Hersheys", gradient: "linear-gradient(135deg, #1e130c, #9a8478)" },
   { name: "Transparent", gradient: "transparent" },
 ];
+
+export const PADDING_OPTIONS = [16, 32, 48, 64, 96] as const;
 
 export const THEME_OPTIONS: ThemeOption[] = [
   { id: "github-dark", name: "GitHub Dark" },

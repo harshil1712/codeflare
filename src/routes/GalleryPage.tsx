@@ -1,8 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link } from "@tanstack/react-router";
-import { Trash, ArrowsOut, Lock, Image, MagnifyingGlass, X } from "@phosphor-icons/react";
-import { Banner, Button, Dialog, Empty, Input } from "@cloudflare/kumo";
+import { Image, Lock, MagnifyingGlass, Trash, X } from "@phosphor-icons/react";
+import {
+  Banner,
+  Button,
+  Dialog,
+  Empty,
+  InputGroup,
+  LinkButton,
+  Loader,
+  Text,
+} from "@cloudflare/kumo";
 import { authClient } from "../../lib/auth-client";
+import GalleryCard from "../components/GalleryCard";
 import type { ScreenshotMeta, SearchResponse } from "../types";
 
 interface GalleryResponse {
@@ -167,18 +176,18 @@ function GalleryPage() {
   if (!sessionLoading && !isAuthenticated) {
     return (
       <div className="gallery-page">
-        <div className="gallery-auth-prompt">
-          <div className="gallery-auth-icon">
-            <Lock size={40} weight="bold" />
-          </div>
-          <h2 className="gallery-auth-title">Sign in to view your gallery</h2>
-          <p className="gallery-auth-body">
-            Your saved screenshots are private. Sign in to access them.
-          </p>
-          <Link to="/login">
-            <Button variant="primary">Sign in</Button>
-          </Link>
-        </div>
+        <Empty
+          size="lg"
+          className="gallery-empty"
+          icon={<Lock size={40} weight="duotone" />}
+          title="Sign in to view your gallery"
+          description="Your saved screenshots are private. Sign in to access them."
+          contents={
+            <LinkButton href="/login" variant="primary">
+              Sign in
+            </LinkButton>
+          }
+        />
       </div>
     );
   }
@@ -188,52 +197,56 @@ function GalleryPage() {
   const lightboxShot = screenshots.find((s) => s.key === lightboxKey);
 
   const isSearchActive = searchQuery.trim().length > 0;
+  const resultCount = searchResults?.data.length ?? 0;
+
+  const subtitle = loading
+    ? "Loading…"
+    : isSearchActive && searchResults
+      ? `${resultCount} result${resultCount !== 1 ? "s" : ""} found`
+      : `${screenshots.length} screenshot${screenshots.length !== 1 ? "s" : ""} saved`;
 
   return (
     <div className="gallery-page">
-      <div className="gallery-header">
+      <header className="gallery-header">
         <div>
-          <h2 className="gallery-title">Saved Screenshots</h2>
-          <p className="gallery-subtitle">
-            {loading
-              ? "Loading…"
-              : isSearchActive && searchResults
-                ? `${searchResults.data.length} result${searchResults.data.length !== 1 ? "s" : ""} found`
-                : `${screenshots.length} screenshot${screenshots.length !== 1 ? "s" : ""} saved`}
-          </p>
+          <Text variant="heading" size="lg" as="h1">
+            Gallery
+          </Text>
+          <Text variant="secondary" size="sm">
+            {subtitle}
+          </Text>
         </div>
-      </div>
 
-      <div className="gallery-search">
-        <div className="gallery-search-input-wrap">
-          <MagnifyingGlass size={16} weight="bold" className="gallery-search-icon" />
-          <Input
-            placeholder="Search your screenshots..."
+        <InputGroup className="gallery-search">
+          <InputGroup.Addon>
+            {searching ? <Loader size={14} /> : <MagnifyingGlass size={16} />}
+          </InputGroup.Addon>
+          <InputGroup.Input
+            placeholder="Search your screenshots…"
+            aria-label="Search screenshots"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="gallery-search-input"
           />
           {searchQuery && (
-            <button
-              className="gallery-search-clear"
+            <InputGroup.Button
+              variant="ghost"
+              shape="square"
+              icon={X}
               onClick={clearSearch}
               aria-label="Clear search"
-            >
-              <X size={14} weight="bold" />
-            </button>
+            />
           )}
-        </div>
-        {searching && <p className="gallery-search-status">Searching…</p>}
-      </div>
+        </InputGroup>
+      </header>
 
       {searchError && (
-        <Banner variant="error" className="gallery-error-banner">
+        <Banner variant="error" className="gallery-banner">
           {searchError}
         </Banner>
       )}
 
       {error && (
-        <Banner variant="error" className="gallery-error-banner">
+        <Banner variant="error" className="gallery-banner">
           {error}
           <Button variant="secondary-destructive" size="sm" onClick={retryLoad}>
             Retry
@@ -243,92 +256,57 @@ function GalleryPage() {
 
       {!loading && !error && screenshots.length === 0 && !isSearchActive && (
         <Empty
-          icon={<Image size={48} weight="thin" />}
-          title="No screenshots yet"
-          description='Use the "Save to R2" or "Save & Download" buttons in the editor to save screenshots here.'
           size="lg"
+          className="gallery-empty"
+          icon={<Image size={48} weight="duotone" />}
+          title="No screenshots yet"
+          description="Use “Save to gallery” in the editor to keep screenshots here."
+          contents={
+            <LinkButton href="/" variant="primary">
+              Open the editor
+            </LinkButton>
+          }
         />
       )}
 
-      {isSearchActive && searchResults && searchResults.data.length === 0 && (
+      {isSearchActive && searchResults && resultCount === 0 && (
         <Empty
-          icon={<MagnifyingGlass size={48} weight="thin" />}
+          size="lg"
+          className="gallery-empty"
+          icon={<MagnifyingGlass size={48} weight="duotone" />}
           title="No results found"
           description="Try a different search query."
-          size="lg"
         />
       )}
 
-      {!loading &&
-        (isSearchActive ? (searchResults?.data.length ?? 0) > 0 : screenshots.length > 0) && (
-          <div className="gallery-grid">
-            {isSearchActive && searchResults
-              ? searchResults.data.map((item) => (
-                  <div key={item.file_id} className="gallery-card">
-                    <button
-                      className="gallery-card-thumb"
-                      onClick={() => setLightboxKey(item.key)}
-                      aria-label="View full size"
-                    >
-                      <img
-                        src={imgUrl(item.key)}
-                        alt="Search result screenshot"
-                        className="gallery-card-img"
-                        loading="lazy"
-                      />
-                      <div className="gallery-card-overlay">
-                        <ArrowsOut size={22} weight="bold" />
-                      </div>
-                    </button>
-                    <div className="gallery-card-info">
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        shape="square"
-                        icon={Trash}
-                        onClick={() => handleDelete(item.key)}
-                        disabled={deletingKey === item.key}
-                        aria-label="Delete screenshot"
-                        className="gallery-card-delete"
-                      />
-                    </div>
-                  </div>
-                ))
-              : screenshots.map((shot) => (
-                  <div key={shot.key} className="gallery-card">
-                    <button
-                      className="gallery-card-thumb"
-                      onClick={() => setLightboxKey(shot.key)}
-                      aria-label="View full size"
-                    >
-                      <img
-                        src={imgUrl(shot.key)}
-                        alt={`Screenshot saved ${formatDate(shot.uploaded)}`}
-                        className="gallery-card-img"
-                        loading="lazy"
-                      />
-                      <div className="gallery-card-overlay">
-                        <ArrowsOut size={22} weight="bold" />
-                      </div>
-                    </button>
-                    <div className="gallery-card-info">
-                      <span className="gallery-card-date">{formatDate(shot.uploaded)}</span>
-                      <span className="gallery-card-size">{formatSize(shot.size)}</span>
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        shape="square"
-                        icon={Trash}
-                        onClick={() => handleDelete(shot.key)}
-                        disabled={deletingKey === shot.key}
-                        aria-label="Delete screenshot"
-                        className="gallery-card-delete"
-                      />
-                    </div>
-                  </div>
-                ))}
-          </div>
-        )}
+      {!loading && (isSearchActive ? resultCount > 0 : screenshots.length > 0) && (
+        <div className="gallery-grid">
+          {isSearchActive && searchResults
+            ? searchResults.data.map((item) => (
+                <GalleryCard
+                  key={item.file_id}
+                  src={imgUrl(item.key)}
+                  alt="Search result screenshot"
+                  caption={item.filename}
+                  deleting={deletingKey === item.key}
+                  onOpen={() => setLightboxKey(item.key)}
+                  onDelete={() => handleDelete(item.key)}
+                />
+              ))
+            : screenshots.map((shot) => (
+                <GalleryCard
+                  key={shot.key}
+                  src={imgUrl(shot.key)}
+                  alt={`Screenshot saved ${formatDate(shot.uploaded)}`}
+                  caption={formatDate(shot.uploaded)}
+                  detail={formatSize(shot.size)}
+                  deleting={deletingKey === shot.key}
+                  onOpen={() => setLightboxKey(shot.key)}
+                  onDelete={() => handleDelete(shot.key)}
+                />
+              ))}
+        </div>
+      )}
 
       <Dialog.Root
         open={!!lightboxKey}
@@ -336,14 +314,20 @@ function GalleryPage() {
           if (!open) setLightboxKey(null);
         }}
       >
-        <Dialog size="xl" className="gallery-lightbox-dialog">
-          <button
-            className="gallery-lightbox-close"
-            onClick={() => setLightboxKey(null)}
-            aria-label="Close preview"
-          >
-            ×
-          </button>
+        <Dialog size="xl" className="gallery-lightbox">
+          <Dialog.Title className="sr-only">Screenshot preview</Dialog.Title>
+          <Dialog.Close
+            render={
+              <Button
+                variant="secondary"
+                size="sm"
+                shape="square"
+                icon={X}
+                aria-label="Close preview"
+                className="gallery-lightbox-close"
+              />
+            }
+          />
           {lightboxKey && (
             <img
               src={imgUrl(lightboxKey)}
@@ -352,20 +336,22 @@ function GalleryPage() {
             />
           )}
           {lightboxShot && (
-            <div className="gallery-lightbox-footer">
-              <span>{formatDate(lightboxShot.uploaded)}</span>
-              <span>{formatSize(lightboxShot.size)}</span>
+            <footer className="gallery-lightbox-footer">
+              <Text size="sm" variant="secondary">
+                {formatDate(lightboxShot.uploaded)}
+              </Text>
+              <Text variant="mono-secondary">{formatSize(lightboxShot.size)}</Text>
               <Button
                 variant="destructive"
                 size="sm"
                 icon={Trash}
+                loading={deletingKey === lightboxKey}
                 onClick={() => handleDelete(lightboxKey!)}
-                disabled={deletingKey === lightboxKey}
-                className="gallery-lightbox-delete-btn"
+                className="gallery-lightbox-delete"
               >
-                {deletingKey === lightboxKey ? "Deleting…" : "Delete"}
+                Delete
               </Button>
-            </div>
+            </footer>
           )}
         </Dialog>
       </Dialog.Root>

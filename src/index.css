@@ -1,22 +1,73 @@
-* {
-  box-sizing: border-box;
-}
+/* Declared before Kumo's stylesheet loads (see main.tsx). Layers declared first have the lowest
+   priority for normal rules but the highest for !important ones, which is what lets us override
+   Kumo utilities such as `!text-white`. */
+@layer cf-overrides;
+
+/* ─── Design tokens ───────────────────────────────────────────
+   App tokens (--cf-*) plus overrides for Kumo's semantic tokens, so every
+   Kumo component picks up the CodeFlare palette. Kumo declares its tokens
+   inside a cascade layer, so these unlayered declarations take precedence. */
 
 :root {
-  font-family:
-    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
-    sans-serif;
+  /* Brand */
+  --cf-accent: #ffa585;
+  --cf-accent-hover: #ffb79d;
+  --cf-on-accent: #2a1208;
+  --cf-accent-soft: color-mix(in srgb, var(--cf-accent) 16%, transparent);
+
+  /* Surfaces */
+  --cf-bg: #0e0e10;
+  --cf-rail: #131316;
+  --cf-field: #1b1b1f;
+  --cf-field-hover: #222227;
+  --cf-line: #232328;
+  --cf-text: #ececee;
+  --cf-muted: #7c7c85;
+
+  --cf-font-mono:
+    ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Monaco, Consolas, monospace;
+
+  /* Kumo: brand + focus */
+  --color-kumo-brand: var(--cf-accent);
+  --color-kumo-brand-hover: var(--cf-accent-hover);
+  --text-color-kumo-brand: var(--cf-accent);
+  --color-kumo-focus: var(--cf-accent);
+
+  /* Kumo: surfaces */
+  --color-kumo-canvas: var(--cf-bg);
+  --color-kumo-elevated: var(--cf-rail);
+  --color-kumo-recessed: #161619;
+  --color-kumo-base: var(--cf-field);
+  --color-kumo-control: var(--cf-field);
+  --color-kumo-tint: var(--cf-field-hover);
+  --color-kumo-overlay: #2c2c33;
+  --color-kumo-fill: #2a2a30;
+  --color-kumo-hairline: var(--cf-line);
+  --color-kumo-line: #2c2c33;
+
+  /* Kumo: text */
+  --text-color-kumo-default: var(--cf-text);
+  --text-color-kumo-subtle: var(--cf-muted);
+  --text-color-kumo-link: var(--cf-accent);
+
+  /* Kumo: typography */
+  --font-sans: "Figtree Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--cf-font-mono);
+
+  font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: dark;
-  color: #e8e8e8;
-  background-color: #111111;
-
+  color: var(--cf-text);
+  background-color: var(--cf-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -31,16 +82,6 @@ body {
   height: 100vh;
 }
 
-a {
-  font-weight: 500;
-  color: #f6821f;
-  text-decoration: none;
-}
-
-a:hover {
-  color: #ff9a3c;
-}
-
 h1,
 h2,
 h3,
@@ -51,50 +92,44 @@ h6 {
   line-height: 1.2;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.2s;
+/* ─── Kumo primary button ─────────────────────────────────────
+   Kumo's primary variant renders white text over a subtle gradient. Peach
+   needs dark text, and we want a flat fill. Primary buttons are the only
+   ones (Button and LinkButton) whose inline emphasis style references the
+   brand token. */
+
+@layer cf-overrides {
+  :is(
+    [data-kumo-component="Button"],
+    [data-kumo-component="LinkButton"]
+  )[style*="--color-kumo-brand"] {
+    color: var(--cf-on-accent) !important;
+  }
 }
 
-button:not([role="switch"]) {
-  background-color: rgba(255, 255, 255, 0.08);
+:is(
+  [data-kumo-component="Button"],
+  [data-kumo-component="LinkButton"]
+)[style*="--color-kumo-brand"] {
+  --kumo-button-emphasis-gradient-start: var(--color-kumo-brand) !important;
+  --kumo-button-emphasis-gradient-end: var(--color-kumo-brand) !important;
+  --kumo-button-emphasis-bg: var(--color-kumo-brand-hover) !important;
+  --kumo-button-emphasis-ring: transparent !important;
 }
 
-button:not([role="switch"]):hover {
-  background-color: rgba(255, 255, 255, 0.12);
+/* ─── Scrollbars ──────────────────────────────────────────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2c2c33 transparent;
 }
 
-button:focus,
-button:focus-visible {
-  outline: 2px solid #f6821f;
-  outline-offset: 2px;
-}
+/* ─── Kumo overlays ───────────────────────────────────────────
+   Kumo/Base UI popups (Select, DropdownMenu, Tooltip, Dialog) render into
+   portals without a z-index, so positioned controls such as InputGroup inputs
+   (z-index: 1) could paint over them. Lift every portal above app content. */
 
-input,
-select,
-textarea {
-  font-family: inherit;
-}
-
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(246, 130, 31, 0.3);
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(246, 130, 31, 0.5);
+[data-base-ui-portal] {
+  position: relative;
+  z-index: 50;
 }

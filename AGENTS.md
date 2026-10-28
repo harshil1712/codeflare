@@ -249,9 +249,22 @@ Regenerate `worker-configuration.d.ts` with `vp run cf-typegen` after any `wrang
 ## CSS Conventions
 
 - **Plain CSS only** – no Tailwind, no CSS Modules, no preprocessors
-- **Dark-first design** – base background `#111111`, sidebar `#161616`
-- **Brand accent**: Cloudflare orange `#F6821F` for active states, focus rings, scrollbars
-- Component styles live in `App.css` (organized with comment banners); global reset in `index.css`
+- **Kumo first** – build UI from `@cloudflare/kumo` components (`Select`, `Slider`, `Switch`, `Tabs`,
+  `Input`/`InputGroup`, `Button`/`LinkButton`, `Tooltip`, `Empty`, `Dialog`, …) and theme them via
+  tokens; custom CSS is for layout. Kumo links route through TanStack Router via `LinkProvider` +
+  `src/components/AppLink.tsx`, so use `href` on `Link`/`LinkButton`
+- **Tokens** live in `index.css`: app tokens (`--cf-*`) plus overrides of Kumo semantic tokens
+  (`--color-kumo-*`, `--text-color-kumo-*`, `--font-sans`). Change colors there, not per component
+- **Dark-first design** (`<html data-mode="dark">`) – background `#0e0e10`, panels `#131316`,
+  fields `#1b1b1f`, lines `#232328`
+- **Brand accent**: Peach `#FFA585` (`--cf-accent`, also Kumo's brand token) with dark text
+  `#2a1208` on filled buttons. Primary buttons are flat; see the `cf-overrides` layer in `index.css`
+- **Cascade layers**: `index.css` is imported before Kumo's stylesheet so the `cf-overrides` layer
+  is declared first; its `!important` rules are the only way to beat Kumo's `!important` utilities
+- **Fonts**: Figtree Variable (`@fontsource-variable/figtree`) for UI; system monospace for code
+- **Background presets** come from uiGradients and must stay single `linear-gradient()` values to
+  pass the worker's `isValidCssValue()` check
+- Layout styles live in `App.css` (organized with comment banners); tokens and resets in `index.css`
 - CSS class names are kebab-case globals (no scoping)
 
 ## Lint Configuration (Oxlint)

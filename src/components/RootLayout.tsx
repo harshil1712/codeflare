@@ -1,89 +1,110 @@
-import { Link, Outlet, useLocation, useRouter } from "@tanstack/react-router";
-import { DropdownMenu, Link as KumoLink } from "@cloudflare/kumo";
-import { GithubLogo, Images, PencilSimple, SignOut, UserCircle } from "@phosphor-icons/react";
+import { Outlet, useLocation, useRouter } from "@tanstack/react-router";
+import {
+  Button,
+  DropdownMenu,
+  Link,
+  LinkButton,
+  LinkProvider,
+  Tooltip,
+  TooltipProvider,
+} from "@cloudflare/kumo";
+import { GithubLogo, Images, PencilSimple, SignIn, SignOut } from "@phosphor-icons/react";
 import { authClient } from "../../lib/auth-client";
+import AppLink from "./AppLink";
+
+const NAV_ITEMS = [
+  { href: "/", label: "Editor", icon: PencilSimple },
+  { href: "/gallery", label: "Gallery", icon: Images },
+] as const;
 
 function RootLayout() {
   const location = useLocation();
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
 
-  const isGallery = location.pathname === "/gallery";
-  const isAuth = location.pathname === "/login" || location.pathname === "/register";
-
   const handleSignOut = async () => {
     await authClient.signOut();
     await router.navigate({ to: "/" });
   };
 
-  return (
-    <div className="app-root">
-      <header className="app-header">
-        <div className="app-header-left">
-          <h1 className="app-title">
-            <Link to="/">CodeFlare</Link>
-          </h1>
-          <nav className="app-header-nav">
-            <Link
-              to="/"
-              className={`header-nav-link${!isGallery && !isAuth ? " header-nav-link-active" : ""}`}
-            >
-              <PencilSimple size={15} weight="bold" />
-              Editor
-            </Link>
-            <Link
-              to="/gallery"
-              className={`header-nav-link${isGallery ? " header-nav-link-active" : ""}`}
-            >
-              <Images size={15} weight="bold" />
-              Gallery
-            </Link>
-          </nav>
-        </div>
+  const displayName = session?.user.name || session?.user.email || "";
 
-        <div className="app-header-right">
-          {!isPending && (
-            <>
-              {session ? (
-                <DropdownMenu>
-                  <DropdownMenu.Trigger className="user-menu-trigger">
-                    <UserCircle size={16} weight="bold" />
-                    <span className="user-menu-name">
-                      {session.user.name || session.user.email}
-                    </span>
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Portal>
-                    <DropdownMenu.Content>
-                      <DropdownMenu.Item icon={SignOut} variant="default" onClick={handleSignOut}>
+  return (
+    <LinkProvider component={AppLink}>
+      <TooltipProvider>
+        <div className="app-root">
+          <header className="app-header">
+            <Link href="/" variant="plain" className="app-logo" aria-label="CodeFlare home">
+              <span className="app-logo-mark" aria-hidden="true" />
+              CodeFlare
+            </Link>
+
+            <nav className="app-nav" aria-label="Main">
+              {NAV_ITEMS.map(({ href, label, icon }) => {
+                const active = location.pathname === href;
+                return (
+                  <LinkButton
+                    key={href}
+                    href={href}
+                    variant="ghost"
+                    size="sm"
+                    icon={icon}
+                    aria-current={active ? "page" : undefined}
+                    className="app-nav-link"
+                  >
+                    {label}
+                  </LinkButton>
+                );
+              })}
+            </nav>
+
+            <div className="app-header-actions">
+              <Tooltip
+                content="View on GitHub"
+                side="bottom"
+                render={
+                  <LinkButton
+                    href="https://github.com/harshil1712/codeflare"
+                    external
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={GithubLogo}
+                    aria-label="View on GitHub"
+                  />
+                }
+              />
+
+              {!isPending &&
+                (session ? (
+                  <DropdownMenu>
+                    <DropdownMenu.Trigger
+                      render={
+                        <Button variant="outline" size="sm" className="user-menu-trigger">
+                          <span className="user-avatar" aria-hidden="true">
+                            {displayName.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="user-menu-name">{displayName}</span>
+                        </Button>
+                      }
+                    />
+                    <DropdownMenu.Content align="end">
+                      <DropdownMenu.Item icon={SignOut} onClick={handleSignOut}>
                         Sign out
                       </DropdownMenu.Item>
                     </DropdownMenu.Content>
-                  </DropdownMenu.Portal>
-                </DropdownMenu>
-              ) : (
-                <Link
-                  to="/login"
-                  className={`header-nav-link${isAuth ? " header-nav-link-active" : ""}`}
-                >
-                  Sign in
-                </Link>
-              )}
-            </>
-          )}
-          <KumoLink
-            href="https://github.com/harshil1712/codeflare"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="nav-github-link"
-            aria-label="View on GitHub"
-            variant="plain"
-          >
-            <GithubLogo size={18} />
-          </KumoLink>
+                  </DropdownMenu>
+                ) : (
+                  <LinkButton href="/login" variant="secondary" size="sm" icon={SignIn}>
+                    Sign in
+                  </LinkButton>
+                ))}
+            </div>
+          </header>
+          <Outlet />
         </div>
-      </header>
-      <Outlet />
-    </div>
+      </TooltipProvider>
+    </LinkProvider>
   );
 }
 

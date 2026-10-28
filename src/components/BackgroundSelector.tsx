@@ -1,4 +1,4 @@
-import { Label } from "@cloudflare/kumo";
+import { Tooltip } from "@cloudflare/kumo";
 import { BACKGROUND_PRESETS } from "../types";
 
 interface BackgroundSelectorProps {
@@ -8,22 +8,31 @@ interface BackgroundSelectorProps {
 
 function BackgroundSelector({ value, onChange }: BackgroundSelectorProps) {
   return (
-    <div className="control-group">
-      <Label className="control-label">Background</Label>
-      <div className="background-grid">
-        {BACKGROUND_PRESETS.map((preset) => (
-          <button
+    <div className="swatch-grid" role="radiogroup" aria-label="Background">
+      {BACKGROUND_PRESETS.map((preset) => {
+        const selected = value === preset.gradient;
+        return (
+          <Tooltip
             key={preset.name}
-            className={`background-option ${
-              value === preset.gradient ? "background-option-active" : ""
-            }`}
-            style={{ background: preset.gradient }}
-            onClick={() => onChange(preset.gradient)}
-            title={preset.name}
-            aria-label={`Select ${preset.name} background`}
+            content={preset.name}
+            render={
+              <button
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                aria-label={preset.name}
+                className={`swatch${selected ? " swatch-selected" : ""}${
+                  preset.gradient === "transparent" ? " swatch-transparent" : ""
+                }`}
+                style={
+                  preset.gradient === "transparent" ? undefined : { background: preset.gradient }
+                }
+                onClick={() => onChange(preset.gradient)}
+              />
+            }
           />
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { Button } from "@cloudflare/kumo";
-import { ArrowSquareOut, CloudArrowUp, DownloadSimple, Lock } from "@phosphor-icons/react";
+import { Button, LinkButton } from "@cloudflare/kumo";
+import { CloudArrowUp, Copy, DownloadSimple, Lock } from "@phosphor-icons/react";
 import { authClient } from "../../lib/auth-client";
 import { toastManager } from "../toast";
 import type { ExportAction, ScreenshotOptions } from "../types";
+
+type PendingAction = ExportAction | "copy";
 
 interface ExportButtonProps {
   options: ScreenshotOptions;
@@ -15,104 +16,126 @@ function triggerDownload(blob: Blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `codeshot-${Date.now()}.png`;
+  a.download = `codeflare-${Date.now()}.png`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
+async function requestScreenshot(options: ScreenshotOptions, action: ExportAction) {
+  const response = await fetch("/api/screenshot", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, action }),
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(error.error || "Failed to generate screenshot");
+  }
+  return response;
+}
+
+function reportError(title: string, error: unknown) {
+  console.error(`${title}:`, error);
+  toastManager.add({
+    title,
+    description:
+      error instanceof Error ? error.message : "Failed to generate screenshot. Please try again.",
+    type: "error",
+    priority: "high",
+  });
+}
+
 function ExportButton({ options, disabled }: ExportButtonProps) {
-  const [loadingAction, setLoadingAction] = useState<ExportAction | null>(null);
+  const [pending, setPending] = useState<PendingAction | null>(null);
   const { data: session } = authClient.useSession();
 
-  const isAuthenticated = !!session;
+  const isDisabled = disabled || !options.code || pending !== null;
 
-  const handleExport = async (action: ExportAction) => {
-    if (!options.code) return;
-
-    setLoadingAction(action);
-
+  const handleDownload = async () => {
+    setPending("download_only");
     try {
-      const response = await fetch("/api/screenshot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...options, action }),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = (await response.json()) as { error?: string };
-        throw new Error(error.error || "Failed to generate screenshot");
-      }
-
-      if (action === "r2_only") {
-        toastManager.add({ title: "Saved!", description: "View in Gallery →", type: "success" });
-      } else {
-        const blob = await response.blob();
-        triggerDownload(blob);
-        if (action === "r2_and_download") {
-          toastManager.add({ title: "Saved!", description: "View in Gallery →", type: "success" });
-        }
-      }
+      const response = await requestScreenshot(options, "download_only");
+      triggerDownload(await response.blob());
     } catch (error) {
-      console.error("Export error:", error);
-      toastManager.add({
-        title: "Export failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to generate screenshot. Please try again.",
-        type: "error",
-        priority: "high",
-      });
+      reportError("Export failed", error);
     } finally {
-      setLoadingAction(null);
+      setPending(null);
     }
   };
 
-  const isDisabled = disabled || !options.code;
+  const handleSave = async () => {
+    setPending("r2_only");
+    try {
+      await requestScreenshot(options, "r2_only");
+      toastManager.add({ title: "Saved to gallery", type: "success" });
+    } catch (error) {
+      reportError("Save failed", error);
+    } finally {
+      setPending(null);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+      reportError("Copy failed", new Error("Your browser can't copy images to the clipboard."));
+      return;
+    }
+    setPending("copy");
+    try {
+      // Pass the pending blob straight to ClipboardItem so Safari keeps the user-gesture context.
+      const blob = requestScreenshot(options, "download_only").then((res) => res.blob());
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toastManager.add({ title: "Copied to clipboard", type: "success" });
+    } catch (error) {
+      reportError("Copy failed", error);
+    } finally {
+      setPending(null);
+    }
+  };
 
   return (
-    <div className="export-buttons">
-      {isAuthenticated ? (
-        <>
-          <Button
-            onClick={() => handleExport("r2_only")}
-            disabled={isDisabled || loadingAction !== null}
-            variant="secondary"
-            size="base"
-            icon={<CloudArrowUp weight="bold" />}
-          >
-            {loadingAction === "r2_only" ? "Saving..." : "Save to R2"}
-          </Button>
-
-          <Button
-            onClick={() => handleExport("r2_and_download")}
-            disabled={isDisabled || loadingAction !== null}
-            variant="secondary"
-            size="base"
-            icon={<ArrowSquareOut weight="bold" />}
-          >
-            {loadingAction === "r2_and_download" ? "Generating..." : "Save & Download"}
-          </Button>
-        </>
-      ) : (
-        <Link to="/login" className="export-signin-prompt">
-          <Lock size={14} weight="bold" />
-          Sign in to save screenshots
-        </Link>
-      )}
-
+    <div className="export-actions">
       <Button
-        onClick={() => handleExport("download_only")}
-        disabled={isDisabled || loadingAction !== null}
         variant="primary"
-        size="base"
-        icon={<DownloadSimple weight="bold" />}
+        className="export-primary"
+        icon={DownloadSimple}
+        loading={pending === "download_only"}
+        disabled={isDisabled}
+        onClick={handleDownload}
       >
-        {loadingAction === "download_only" ? "Generating..." : "Download"}
+        Download PNG
       </Button>
+
+      <div className="export-secondary">
+        {session ? (
+          <Button
+            icon={CloudArrowUp}
+            size="sm"
+            loading={pending === "r2_only"}
+            disabled={isDisabled}
+            onClick={handleSave}
+          >
+            Save to gallery
+          </Button>
+        ) : (
+          <LinkButton href="/login" variant="secondary" size="sm" icon={Lock}>
+            Sign in to save
+          </LinkButton>
+        )}
+        <Button
+          icon={Copy}
+          size="sm"
+          loading={pending === "copy"}
+          disabled={isDisabled}
+          onClick={handleCopy}
+        >
+          Copy image
+        </Button>
+      </div>
     </div>
   );
 }
