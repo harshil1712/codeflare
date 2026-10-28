@@ -226,6 +226,7 @@ const highlighterCache = new Map<string, Highlighter>();
 | `BROWSER`      | Browser Rendering                   | Puppeteer launch for screenshot generation |
 | `SCREENSHOTS`  | R2 Bucket (`codeflare-screenshots`) | Optional persistent screenshot storage     |
 | `RATE_LIMITER` | Rate Limit (10 req / 60 s)          | Per-IP abuse prevention                    |
+| `SEARCH`       | AI Search (`codeflare-search`)      | OCR + hybrid search over saved screenshots |
 
 Type them via the `AppEnv` interface in `worker/index.ts`:
 

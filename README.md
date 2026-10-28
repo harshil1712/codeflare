@@ -22,7 +22,7 @@ Paste your code, customize the styling, and export a pixel-perfect PNG rendered 
 - **Flexible export** — download only, save to R2, or save and download
 - **Authentication** — email/password sign-up and sign-in via Better Auth, backed by Cloudflare D1
 - **Screenshot gallery** — authenticated users can browse, preview, and delete their saved screenshots
-- **AI-powered search** — semantic search across saved screenshots using Cloudflare AutoRAG
+- **AI-powered search** — find saved screenshots by the code in them, using Cloudflare AI Search with OCR and hybrid (semantic + keyword) retrieval
 - **Rate limiting** — 10 requests per 60 seconds per IP
 
 ---
@@ -41,7 +41,7 @@ Paste your code, customize the styling, and export a pixel-perfect PNG rendered 
 | Backend             | Hono 4 on Cloudflare Workers               |
 | Screenshot engine   | @cloudflare/puppeteer (Browser Rendering)  |
 | Storage             | Cloudflare R2                              |
-| AI search           | Cloudflare AutoRAG                         |
+| AI search           | Cloudflare AI Search (OCR, hybrid search)  |
 | Rate limiting       | Cloudflare Rate Limiting binding           |
 | Deployment          | Cloudflare Pages + Workers (Wrangler)      |
 
@@ -92,10 +92,11 @@ This starts the Vite dev server at `http://localhost:5173` with HMR. The fronten
 
 ### Notes on Cloudflare bindings in development
 
-The worker uses five Cloudflare bindings (`BROWSER`, `SCREENSHOTS`, `RATE_LIMITER`, `AI`, `DB`). In local development these are provided by Wrangler's local simulation, with one exception:
+The worker uses five Cloudflare bindings (`BROWSER`, `SCREENSHOTS`, `RATE_LIMITER`, `SEARCH`, `DB`). In local development most are provided by Wrangler's local simulation, with two exceptions:
 
 - `BROWSER` is configured with `"remote": true` in `wrangler.jsonc`, so screenshot generation makes live calls to Cloudflare's Browser Rendering service during dev.
-- `SCREENSHOTS` (R2), `RATE_LIMITER`, `DB` (D1), and `AI` are simulated locally by Wrangler.
+- `SEARCH` (AI Search) is also `"remote": true`, so gallery search queries the real `codeflare-search` instance.
+- `SCREENSHOTS` (R2), `RATE_LIMITER`, and `DB` (D1) are simulated locally by Wrangler.
 
 You must be logged in to Wrangler for remote bindings to work:
 
@@ -181,7 +182,7 @@ vpx wrangler d1 migrations apply DB --remote
 
 **Browser Rendering** — enabled automatically for your account; no manual creation required.
 
-**AutoRAG** — create an AutoRAG instance named `codeflare-search` in the Cloudflare dashboard (AI > AutoRAG), then ensure the `AI` binding in `wrangler.jsonc` points to your account's AI gateway.
+**AI Search** — create an AI Search instance named `codeflare-search` in the Cloudflare dashboard (AI > AI Search) with the `codeflare-screenshots` R2 bucket as its data source. Enable **OCR** (`indexing_options.use_ocr`) so the code text in screenshots is indexed, and keyword indexing with the **trigram** tokenizer (`indexing_options.keyword_tokenizer`) for hybrid search that matches code identifiers. The `SEARCH` binding in `wrangler.jsonc` points at this instance.
 
 ### 2. Set secrets
 
@@ -208,7 +209,7 @@ This runs `vp check` (format, lint, and type-check), `vp build` (bundle frontend
 | `BROWSER`      | Browser Rendering | `remote: true`                |
 | `SCREENSHOTS`  | R2 Bucket         | `codeflare-screenshots`       |
 | `RATE_LIMITER` | Rate Limit        | 10 req / 60 s per IP          |
-| `AI`           | AI binding        | Used for AutoRAG search       |
+| `SEARCH`       | AI Search         | `codeflare-search` instance   |
 | `DB`           | D1 Database       | `codeflare` (auth + app data) |
 
 After any changes to `wrangler.jsonc`, regenerate the Worker type definitions:
@@ -324,17 +325,17 @@ Deletes a saved screenshot from R2.
 
 ### `GET /api/search?q=<query>`
 
-Searches saved screenshots using Cloudflare AutoRAG.
+Searches the current user's saved screenshots by their code content using Cloudflare AI Search (OCR-extracted text, hybrid vector + keyword retrieval).
 
 **Auth:** Required (session cookie)
 
 **Query params:**
 
-| Param | Description                   |
-| ----- | ----------------------------- |
-| `q`   | Natural language search query |
+| Param | Description                                                       |
+| ----- | ----------------------------------------------------------------- |
+| `q`   | Search query: code, identifiers, or a description (max 500 chars) |
 
-**Response** (`200`): AutoRAG search result object.
+**Response** (`200`): `{ search_query, data, has_more }`, where `data` has one entry per matching screenshot (`{ file_id, filename, key, score, content }`), best match first, up to 10.
 
 ---
 

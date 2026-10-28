@@ -5,7 +5,7 @@ import puppeteer from "@cloudflare/puppeteer";
 import { createHighlighter, type ShikiTransformer } from "shiki";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import { createAuth } from "../lib/auth";
-import type { ScreenshotRequest } from "../src/types";
+import type { ScreenshotRequest, SearchResponse, SearchResultItem } from "../src/types";
 
 const lineNumberTransformer: ShikiTransformer = {
   line(node, line) {
@@ -468,9 +468,9 @@ app.delete("/api/screenshots/*", async (c) => {
   }
 });
 
-// AI Search — search saved screenshots by code content
-const AI_SEARCH_INSTANCE = "codeflare-search";
-
+// AI Search — search saved screenshots by code content. The `codeflare-search` instance indexes
+// the SCREENSHOTS bucket with OCR (code text is extracted from the PNGs) and hybrid retrieval
+// (vector + trigram keyword matching, which suits code identifiers).
 app.get("/api/search", async (c) => {
   const auth = createAuth(c.env.DB);
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
@@ -487,27 +487,51 @@ app.get("/api/search", async (c) => {
     return c.json({ error: "Query too long (max 500 characters)" }, 400);
   }
 
-  const userPrefix = `screenshots/${session.user.id}/`;
+  // Screenshots are stored flat under screenshots/<userId>/, so an exact folder match scopes the
+  // search to the current user's files
+  const userFolder = `screenshots/${session.user.id}/`;
 
   try {
-    const result = await c.env.AI.autorag(AI_SEARCH_INSTANCE).search({
+    const result = await c.env.SEARCH.search({
       query: query.trim(),
-      max_num_results: 10,
-      rewrite_query: true,
-      filters: {
-        type: "and",
-        filters: [
-          { type: "gt", key: "folder", value: `${userPrefix}/` },
-          { type: "lte", key: "folder", value: `${userPrefix}z` },
-        ],
+      ai_search_options: {
+        retrieval: {
+          retrieval_type: "hybrid",
+          // Fetch extra chunks: one screenshot can produce several, and they are merged below
+          max_num_results: 30,
+          filters: { folder: userFolder },
+        },
       },
     });
 
-    return c.json({
+    // Collapse chunks into one result per screenshot, keeping its best score
+    const byKey = new Map<string, SearchResultItem>();
+    for (const chunk of result.chunks) {
+      const key = chunk.item.key;
+      // Defence in depth: never return another user's screenshot
+      if (!key.startsWith(userFolder)) continue;
+      const existing = byKey.get(key);
+      if (existing) {
+        existing.score = Math.max(existing.score, chunk.score);
+        existing.content.push({ type: "text", text: chunk.text });
+      } else {
+        byKey.set(key, {
+          file_id: key,
+          filename: key.slice(userFolder.length),
+          key,
+          score: chunk.score,
+          content: [{ type: "text", text: chunk.text }],
+        });
+      }
+    }
+    const data = [...byKey.values()].sort((a, b) => b.score - a.score).slice(0, 10);
+
+    const response: SearchResponse = {
       search_query: result.search_query,
-      data: result.data,
-      has_more: result.has_more,
-    });
+      data,
+      has_more: false,
+    };
+    return c.json(response);
   } catch (error) {
     console.error("AI Search error:", error);
     return c.json({ error: "Search failed" }, 500);
