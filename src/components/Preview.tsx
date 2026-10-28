@@ -3,6 +3,13 @@ import { createHighlighter, type Highlighter } from "shiki";
 import Editor from "react-simple-code-editor";
 import WindowCard from "./WindowCard";
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 interface PreviewProps {
   code: string;
   language: string;
@@ -25,7 +32,6 @@ function Preview({
   onChange,
 }: PreviewProps) {
   const [highlighter, setHighlighter] = useState<Highlighter | null>(null);
-  const [highlightedHtml, setHighlightedHtml] = useState<string>("");
 
   // Create highlighter when theme or language changes
   useEffect(() => {
@@ -59,12 +65,9 @@ function Preview({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, language]);
 
-  // Generate highlighted HTML when code, language, or theme changes
-  useEffect(() => {
-    if (!highlighter) {
-      setHighlightedHtml("");
-      return;
-    }
+  // Derive highlighted HTML from code, language, theme, and the loaded highlighter
+  const highlightedHtml = useMemo(() => {
+    if (!highlighter) return "";
 
     try {
       let html = highlighter.codeToHtml(code || " ", {
@@ -78,11 +81,12 @@ function Preview({
       if (match) {
         html = match[1];
       }
-      
-      setHighlightedHtml(html);
+
+      return html;
     } catch (error) {
       console.error("Highlighting error:", error);
-      setHighlightedHtml(code);
+      // The editor renders this string as HTML, so escape the plain-text fallback
+      return escapeHtml(code);
     }
   }, [highlighter, code, language, theme]);
 

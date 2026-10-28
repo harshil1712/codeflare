@@ -335,7 +335,7 @@ app.post("/api/screenshot", async (c) => {
     // Launch browser and take screenshot
     let browser;
     try {
-      browser = await puppeteer.launch(c.env.BROWSER as Fetcher);
+      browser = await puppeteer.launch(c.env.BROWSER);
       const page = await browser.newPage();
 
       await page.setContent(screenshotHtml, { timeout: 10000 });

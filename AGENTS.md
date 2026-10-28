@@ -6,18 +6,18 @@
 Users paste code into the editor, configure styling, and export a PNG via a
 headless-browser screenshot pipeline running on Cloudflare Workers.
 
-- **Frontend**: React 19 SPA (TypeScript, Vite + SWC) in `src/`
-- **Backend**: Cloudflare Worker API using Hono 4.11 (TypeScript) in `worker/`
+- **Frontend**: React 19 SPA (TypeScript, Vite 8 + SWC) in `src/`
+- **Backend**: Cloudflare Worker API using Hono 4.13 (TypeScript) in `worker/`
 - **Deployment**: Cloudflare Pages (frontend) + Cloudflare Workers (backend via Wrangler)
 - **Package Manager**: npm
-- **TypeScript Version**: ~5.8.3 (strict mode enforced)
+- **TypeScript Version**: ~6.0.3 (strict mode enforced; TS 7 is not yet supported by typescript-eslint)
 
 ### Key Dependencies
 
 | Package | Purpose |
 |---------|---------|
 | `shiki` | Syntax highlighting (used in both frontend preview and worker) |
-| `@cloudflare/kumo` | Cloudflare UI kit (Button, Input, Select, Switch, Surface) |
+| `@cloudflare/kumo` | Cloudflare UI kit v2 (Button, Input, Select, Switch, Surface) |
 | `@cloudflare/puppeteer` | Headless browser for server-side PNG generation |
 | `@phosphor-icons/react` | Icon library |
 | `react-simple-code-editor` | Textarea-based code editor with highlight overlay |
@@ -197,7 +197,7 @@ const highlighterCache = new Map<string, Highlighter>();
 Type them via the `AppEnv` interface in `worker/index.ts`:
 ```ts
 interface AppEnv {
-  Bindings: { BROWSER: Fetcher; SCREENSHOTS: R2Bucket; RATE_LIMITER: RateLimit; };
+  Bindings: { BROWSER: BrowserRun; SCREENSHOTS: R2Bucket; RATE_LIMITER: RateLimit; };
 }
 const app = new Hono<AppEnv>();
 ```
@@ -221,10 +221,13 @@ Regenerate `worker-configuration.d.ts` with `npm run cf-typegen` after any `wran
 
 ## ESLint Configuration
 
-- **Flat config** in `eslint.config.js` (ESLint 9+), targeting `**/*.{ts,tsx}`
+- **Flat config** in `eslint.config.js` (ESLint 10, `defineConfig` from `eslint/config`),
+  targeting `**/*.{ts,tsx}`
 - **Enforced rulesets**: `@eslint/js` recommended, `typescript-eslint` recommended,
-  `eslint-plugin-react-hooks` recommended-latest, `eslint-plugin-react-refresh` vite preset
-- **Ignored**: `dist/`
+  `eslint-plugin-react-hooks` v7 `configs.flat["recommended-latest"]` (includes React Compiler
+  rules such as `set-state-in-effect` — derive state with `useMemo` or set it in async
+  callbacks instead of synchronously in effects), `eslint-plugin-react-refresh` vite preset
+- **Ignored**: `dist/`, `worker-configuration.d.ts` (generated)
 - **Run**: `npm run lint` or `npx eslint .`
 
 ## Notes for Agents

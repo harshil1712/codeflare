@@ -26,6 +26,16 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+async function fetchScreenshots(signal: AbortSignal): Promise<ScreenshotMeta[]> {
+  const res = await fetch("/api/screenshots", { credentials: "include", signal });
+  if (!res.ok) throw new Error("Failed to load screenshots");
+  const data = (await res.json()) as GalleryResponse;
+  // Sort newest first
+  return [...data.screenshots].sort(
+    (a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime(),
+  );
+}
+
 function GalleryPage() {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const [screenshots, setScreenshots] = useState<ScreenshotMeta[]>([]);
@@ -33,6 +43,7 @@ function GalleryPage() {
   const [error, setError] = useState<string | null>(null);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const [lightboxKey, setLightboxKey] = useState<string | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,35 +55,34 @@ function GalleryPage() {
 
   const isAuthenticated = !!session;
 
-  const fetchScreenshots = useCallback(async () => {
+  // Unauthenticated users get an early-return sign-in prompt, so `loading`
+  // only matters once a session exists. State is only set once the request
+  // settles; bumping `reloadCount` re-runs the fetch.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const controller = new AbortController();
+    fetchScreenshots(controller.signal)
+      .then((shots) => {
+        setScreenshots(shots);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setError(
+          err instanceof Error ? err.message : "Failed to load screenshots",
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [isAuthenticated, reloadCount]);
+
+  const retryLoad = () => {
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetch("/api/screenshots", { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to load screenshots");
-      const data = (await res.json()) as GalleryResponse;
-      // Sort newest first
-      const sorted = [...data.screenshots].sort(
-        (a, b) =>
-          new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime(),
-      );
-      setScreenshots(sorted);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load screenshots",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchScreenshots();
-    } else if (!sessionLoading) {
-      setLoading(false);
-    }
-  }, [fetchScreenshots, isAuthenticated, sessionLoading]);
+    setReloadCount((n) => n + 1);
+  };
 
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -229,7 +239,7 @@ function GalleryPage() {
           <Button
             variant="secondary-destructive"
             size="sm"
-            onClick={fetchScreenshots}
+            onClick={retryLoad}
           >
             Retry
           </Button>
