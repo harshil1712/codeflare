@@ -1,0 +1,27 @@
+AGENTS.md
+  s_b1b9737eb51df1::t_cbcce4c0d12349 229
+README.md
+  s_b1b9737eb51df1::t_45abe4e0f19941 25,44,95,98-99,185,212,328,334-336,338
+worker-configuration.d.ts
+  s_b1b9737eb51df1::t_cc127ed4b3108e 2,8
+worker/index.ts
+  s_b1b9737eb51df1::t_38c96b04c63c10 8,471-473,490-492,495,497-503,507-529,531-534
+wrangler.jsonc
+  s_b1b9737eb51df1::t_fcbed8fe30f87b 37-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3926a34d823772bec0ab0d18890b76dc6ef72460",
+  "prompts": {},
+  "sessions": {
+    "s_b1b9737eb51df1": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a18388-707b-75d8-8d48-92033dad906e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Harshil Agrawal <harshil@cloudflare.com>"
+    }
+  }
+}
