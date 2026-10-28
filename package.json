@@ -53,5 +53,6 @@
       "version": "^24.11.0",
       "onFail": "download"
     }
-  }
+  },
+  "packageManager": "npm@11.19.0"
 }

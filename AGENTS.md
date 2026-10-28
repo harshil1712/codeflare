@@ -278,6 +278,10 @@ Regenerate `worker-configuration.d.ts` with `vp run cf-typegen` after any `wrang
   type-only imports — always check after adding imports
 - **Avoid enums and namespaces** (`erasableSyntaxOnly` flag); use union types and plain objects
 - **Regenerate CF types** (`vp run cf-typegen`) when modifying `wrangler.jsonc`
+- **Workers Builds (CI)** is connected to this repo: build command `npx vp check && npx vp build`,
+  deploy `npx wrangler deploy` (`main`) / `npx wrangler versions upload` (other branches). It
+  reads Node from `.node-version` and npm from the exact `packageManager` field – keep both in
+  sync with `devEngines` when bumping versions
 - **CORS** in `worker/index.ts` currently allows all origins — tighten before production use
 - **Compatibility date** is `2026-10-23` (latest supported by the installed workerd); review the
   [compatibility flags](https://developers.cloudflare.com/workers/configuration/compatibility-flags/)
