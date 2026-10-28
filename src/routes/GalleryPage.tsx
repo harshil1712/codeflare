@@ -68,9 +68,7 @@ function GalleryPage() {
       })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === "AbortError") return;
-        setError(
-          err instanceof Error ? err.message : "Failed to load screenshots",
-        );
+        setError(err instanceof Error ? err.message : "Failed to load screenshots");
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -133,7 +131,8 @@ function GalleryPage() {
       return;
     }
     debounceRef.current = setTimeout(() => {
-      performSearch(value);
+      // performSearch handles its own errors
+      void performSearch(value);
     }, 600);
   };
 
@@ -236,11 +235,7 @@ function GalleryPage() {
       {error && (
         <Banner variant="error" className="gallery-error-banner">
           {error}
-          <Button
-            variant="secondary-destructive"
-            size="sm"
-            onClick={retryLoad}
-          >
+          <Button variant="secondary-destructive" size="sm" onClick={retryLoad}>
             Retry
           </Button>
         </Banner>
@@ -264,80 +259,76 @@ function GalleryPage() {
         />
       )}
 
-      {!loading && (isSearchActive ? (searchResults?.data.length ?? 0) > 0 : screenshots.length > 0) && (
-        <div className="gallery-grid">
-          {(isSearchActive && searchResults
-            ? searchResults.data.map((item) => (
-                <div key={item.file_id} className="gallery-card">
-                  <button
-                    className="gallery-card-thumb"
-                    onClick={() => setLightboxKey(item.key)}
-                    aria-label="View full size"
-                  >
-                    <img
-                      src={imgUrl(item.key)}
-                      alt="Search result screenshot"
-                      className="gallery-card-img"
-                      loading="lazy"
-                    />
-                    <div className="gallery-card-overlay">
-                      <ArrowsOut size={22} weight="bold" />
+      {!loading &&
+        (isSearchActive ? (searchResults?.data.length ?? 0) > 0 : screenshots.length > 0) && (
+          <div className="gallery-grid">
+            {isSearchActive && searchResults
+              ? searchResults.data.map((item) => (
+                  <div key={item.file_id} className="gallery-card">
+                    <button
+                      className="gallery-card-thumb"
+                      onClick={() => setLightboxKey(item.key)}
+                      aria-label="View full size"
+                    >
+                      <img
+                        src={imgUrl(item.key)}
+                        alt="Search result screenshot"
+                        className="gallery-card-img"
+                        loading="lazy"
+                      />
+                      <div className="gallery-card-overlay">
+                        <ArrowsOut size={22} weight="bold" />
+                      </div>
+                    </button>
+                    <div className="gallery-card-info">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        shape="square"
+                        icon={Trash}
+                        onClick={() => handleDelete(item.key)}
+                        disabled={deletingKey === item.key}
+                        aria-label="Delete screenshot"
+                        className="gallery-card-delete"
+                      />
                     </div>
-                  </button>
-                  <div className="gallery-card-info">
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      shape="square"
-                      icon={Trash}
-                      onClick={() => handleDelete(item.key)}
-                      disabled={deletingKey === item.key}
-                      aria-label="Delete screenshot"
-                      className="gallery-card-delete"
-                    />
                   </div>
-                </div>
-              ))
-            : screenshots.map((shot) => (
-                <div key={shot.key} className="gallery-card">
-                  <button
-                    className="gallery-card-thumb"
-                    onClick={() => setLightboxKey(shot.key)}
-                    aria-label="View full size"
-                  >
-                    <img
-                      src={imgUrl(shot.key)}
-                      alt={`Screenshot saved ${formatDate(shot.uploaded)}`}
-                      className="gallery-card-img"
-                      loading="lazy"
-                    />
-                    <div className="gallery-card-overlay">
-                      <ArrowsOut size={22} weight="bold" />
+                ))
+              : screenshots.map((shot) => (
+                  <div key={shot.key} className="gallery-card">
+                    <button
+                      className="gallery-card-thumb"
+                      onClick={() => setLightboxKey(shot.key)}
+                      aria-label="View full size"
+                    >
+                      <img
+                        src={imgUrl(shot.key)}
+                        alt={`Screenshot saved ${formatDate(shot.uploaded)}`}
+                        className="gallery-card-img"
+                        loading="lazy"
+                      />
+                      <div className="gallery-card-overlay">
+                        <ArrowsOut size={22} weight="bold" />
+                      </div>
+                    </button>
+                    <div className="gallery-card-info">
+                      <span className="gallery-card-date">{formatDate(shot.uploaded)}</span>
+                      <span className="gallery-card-size">{formatSize(shot.size)}</span>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        shape="square"
+                        icon={Trash}
+                        onClick={() => handleDelete(shot.key)}
+                        disabled={deletingKey === shot.key}
+                        aria-label="Delete screenshot"
+                        className="gallery-card-delete"
+                      />
                     </div>
-                  </button>
-                  <div className="gallery-card-info">
-                    <span className="gallery-card-date">
-                      {formatDate(shot.uploaded)}
-                    </span>
-                    <span className="gallery-card-size">
-                      {formatSize(shot.size)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      shape="square"
-                      icon={Trash}
-                      onClick={() => handleDelete(shot.key)}
-                      disabled={deletingKey === shot.key}
-                      aria-label="Delete screenshot"
-                      className="gallery-card-delete"
-                    />
                   </div>
-                </div>
-              ))
-          )}
-        </div>
-      )}
+                ))}
+          </div>
+        )}
 
       <Dialog.Root
         open={!!lightboxKey}

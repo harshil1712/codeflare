@@ -27,7 +27,7 @@ function SignUpPage() {
         return;
       }
 
-      router.navigate({ to: "/" });
+      await router.navigate({ to: "/" });
     } finally {
       setLoading(false);
     }
@@ -38,9 +38,7 @@ function SignUpPage() {
       <div className="auth-card">
         <div className="auth-card-header">
           <h2 className="auth-title">Create your account</h2>
-          <p className="auth-subtitle">
-            Create an account to save your screenshots.
-          </p>
+          <p className="auth-subtitle">Create an account to save your screenshots.</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>

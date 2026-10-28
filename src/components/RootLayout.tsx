@@ -1,12 +1,6 @@
 import { Link, Outlet, useLocation, useRouter } from "@tanstack/react-router";
 import { DropdownMenu, Link as KumoLink } from "@cloudflare/kumo";
-import {
-  GithubLogo,
-  Images,
-  PencilSimple,
-  SignOut,
-  UserCircle,
-} from "@phosphor-icons/react";
+import { GithubLogo, Images, PencilSimple, SignOut, UserCircle } from "@phosphor-icons/react";
 import { authClient } from "../../lib/auth-client";
 
 function RootLayout() {
@@ -15,12 +9,11 @@ function RootLayout() {
   const { data: session, isPending } = authClient.useSession();
 
   const isGallery = location.pathname === "/gallery";
-  const isAuth =
-    location.pathname === "/login" || location.pathname === "/register";
+  const isAuth = location.pathname === "/login" || location.pathname === "/register";
 
   const handleSignOut = async () => {
     await authClient.signOut();
-    router.navigate({ to: "/" });
+    await router.navigate({ to: "/" });
   };
 
   return (
@@ -61,18 +54,17 @@ function RootLayout() {
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Portal>
                     <DropdownMenu.Content>
-                      <DropdownMenu.Item
-                        icon={SignOut}
-                        variant="default"
-                        onClick={handleSignOut}
-                      >
+                      <DropdownMenu.Item icon={SignOut} variant="default" onClick={handleSignOut}>
                         Sign out
                       </DropdownMenu.Item>
                     </DropdownMenu.Content>
                   </DropdownMenu.Portal>
                 </DropdownMenu>
               ) : (
-                <Link to="/login" className={`header-nav-link${isAuth ? " header-nav-link-active" : ""}`}>
+                <Link
+                  to="/login"
+                  className={`header-nav-link${isAuth ? " header-nav-link-active" : ""}`}
+                >
                   Sign in
                 </Link>
               )}

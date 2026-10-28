@@ -1,8 +1,4 @@
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-} from "@tanstack/react-router";
+import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { createElement } from "react";
 import RootLayout from "./components/RootLayout";
 import EditorPage from "./routes/EditorPage";
@@ -44,12 +40,7 @@ const registerRoute = createRoute({
   component: SignUpPage,
 });
 
-const routeTree = rootRoute.addChildren([
-  indexRoute,
-  galleryRoute,
-  loginRoute,
-  registerRoute,
-]);
+const routeTree = rootRoute.addChildren([indexRoute, galleryRoute, loginRoute, registerRoute]);
 
 export const router = createRouter({ routeTree });
 

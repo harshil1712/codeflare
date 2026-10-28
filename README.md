@@ -29,21 +29,21 @@ Paste your code, customize the styling, and export a pixel-perfect PNG rendered 
 
 ## Tech Stack
 
-| Layer               | Technology                                |
-| ------------------- | ----------------------------------------- |
-| Frontend            | React 19, TypeScript, Vite + SWC          |
-| Routing             | TanStack Router                           |
-| Syntax highlighting | Shiki (frontend preview + worker render)  |
-| UI components       | @cloudflare/kumo, @phosphor-icons/react   |
-| Code editor         | react-simple-code-editor                  |
-| Authentication      | Better Auth                               |
-| Database            | Cloudflare D1 (SQLite) via Drizzle ORM    |
-| Backend             | Hono 4 on Cloudflare Workers              |
-| Screenshot engine   | @cloudflare/puppeteer (Browser Rendering) |
-| Storage             | Cloudflare R2                             |
-| AI search           | Cloudflare AutoRAG                        |
-| Rate limiting       | Cloudflare Rate Limiting binding          |
-| Deployment          | Cloudflare Pages + Workers (Wrangler)     |
+| Layer               | Technology                                 |
+| ------------------- | ------------------------------------------ |
+| Frontend            | React 19, TypeScript, Vite+ (Vite 8) + SWC |
+| Routing             | TanStack Router                            |
+| Syntax highlighting | Shiki (frontend preview + worker render)   |
+| UI components       | @cloudflare/kumo, @phosphor-icons/react    |
+| Code editor         | react-simple-code-editor                   |
+| Authentication      | Better Auth                                |
+| Database            | Cloudflare D1 (SQLite) via Drizzle ORM     |
+| Backend             | Hono 4 on Cloudflare Workers               |
+| Screenshot engine   | @cloudflare/puppeteer (Browser Rendering)  |
+| Storage             | Cloudflare R2                              |
+| AI search           | Cloudflare AutoRAG                         |
+| Rate limiting       | Cloudflare Rate Limiting binding           |
+| Deployment          | Cloudflare Pages + Workers (Wrangler)      |
 
 ---
 
@@ -63,16 +63,17 @@ Paste your code, customize the styling, and export a pixel-perfect PNG rendered 
 
 ### Prerequisites
 
-- Node.js 18+
+- [Vite+](https://viteplus.dev) global CLI (`curl -fsSL https://vite.plus | bash`). It installs the
+  Node.js and npm versions declared in `package.json` (`devEngines`) automatically
 - A Cloudflare account with Workers, R2, D1, Browser Rendering, and AI access
-- Wrangler CLI (`npm install -g wrangler` or use the local dev dependency)
+- Wrangler CLI (local dev dependency; run it with `vpx wrangler`)
 
 ### Setup
 
 ```bash
 git clone https://github.com/harshil1712/codeflare
 cd codeflare
-npm install
+vp install
 ```
 
 Copy the example environment file and fill in your values (see [Environment Variables](#environment-variables)):
@@ -84,7 +85,7 @@ cp .env.example .env
 ### Run the dev server
 
 ```bash
-npm run dev
+vp dev
 ```
 
 This starts the Vite dev server at `http://localhost:5173` with HMR. The frontend and worker are bundled together via the `@cloudflare/vite-plugin`.
@@ -99,7 +100,7 @@ The worker uses five Cloudflare bindings (`BROWSER`, `SCREENSHOTS`, `RATE_LIMITE
 You must be logged in to Wrangler for remote bindings to work:
 
 ```bash
-npx wrangler login
+vpx wrangler login
 ```
 
 ---
@@ -111,13 +112,13 @@ CodeFlare uses Cloudflare D1 for authentication data (users, sessions, accounts)
 ### Apply migrations locally
 
 ```bash
-npm run db:migrate
+vp run db:migrate
 ```
 
 ### Regenerate migrations after schema changes
 
 ```bash
-npm run db:generate
+vp run db:generate
 ```
 
 ### Regenerate the Better Auth schema
@@ -125,7 +126,7 @@ npm run db:generate
 If you modify authentication options in `lib/auth.ts`, regenerate the auth schema:
 
 ```bash
-npm run auth:generate
+vp run auth:generate
 ```
 
 ---
@@ -145,8 +146,8 @@ The following secrets are required. Set them in a `.env` file for local developm
 To add secrets to your deployed worker:
 
 ```bash
-npx wrangler secret put BETTER_AUTH_SECRET
-npx wrangler secret put BETTER_AUTH_URL
+vpx wrangler secret put BETTER_AUTH_SECRET
+vpx wrangler secret put BETTER_AUTH_URL
 # etc.
 ```
 
@@ -159,19 +160,21 @@ npx wrangler secret put BETTER_AUTH_URL
 Before deploying, ensure the following exist in your Cloudflare account:
 
 **R2 Bucket**
+
 ```bash
-npx wrangler r2 bucket create codeflare-screenshots
+vpx wrangler r2 bucket create codeflare-screenshots
 ```
 
 **D1 Database**
+
 ```bash
-npx wrangler d1 create codeflare
+vpx wrangler d1 create codeflare
 ```
 
 Update the `database_id` in `wrangler.jsonc` with the ID returned by this command, then apply migrations to production:
 
 ```bash
-npx wrangler d1 migrations apply DB --remote
+vpx wrangler d1 migrations apply DB --remote
 ```
 
 **Rate Limiting namespace** — configured in `wrangler.jsonc` under `ratelimits`. The `namespace_id` must match a rate limit namespace in your account. Update `wrangler.jsonc` with the correct ID if needed.
@@ -183,20 +186,20 @@ npx wrangler d1 migrations apply DB --remote
 ### 2. Set secrets
 
 ```bash
-npx wrangler secret put BETTER_AUTH_SECRET
-npx wrangler secret put BETTER_AUTH_URL
-npx wrangler secret put CLOUDFLARE_ACCOUNT_ID
-npx wrangler secret put CLOUDFLARE_DATABASE_ID
-npx wrangler secret put CLOUDFLARE_D1_TOKEN
+vpx wrangler secret put BETTER_AUTH_SECRET
+vpx wrangler secret put BETTER_AUTH_URL
+vpx wrangler secret put CLOUDFLARE_ACCOUNT_ID
+vpx wrangler secret put CLOUDFLARE_DATABASE_ID
+vpx wrangler secret put CLOUDFLARE_D1_TOKEN
 ```
 
 ### 3. Deploy
 
 ```bash
-npm run deploy
+vp run deploy   # vp check && vp build && wrangler deploy
 ```
 
-This runs `tsc -b` (type-check), `vite build` (bundle frontend + worker), then `wrangler deploy` to push everything to Cloudflare.
+This runs `vp check` (format, lint, and type-check), `vp build` (bundle frontend + worker), then `wrangler deploy` to push everything to Cloudflare.
 
 ### Wrangler bindings reference (`wrangler.jsonc`)
 
@@ -211,7 +214,7 @@ This runs `tsc -b` (type-check), `vite build` (bundle frontend + worker), then `
 After any changes to `wrangler.jsonc`, regenerate the Worker type definitions:
 
 ```bash
-npm run cf-typegen
+vp run cf-typegen
 ```
 
 ---
@@ -392,14 +395,14 @@ Contributions are welcome.
 
 1. Fork the repository and create a feature branch
 2. Make your changes, following the code style in `AGENTS.md`
-3. Run lint and build before opening a PR:
+3. Run checks and build before opening a PR:
    ```bash
-   npm run lint
-   npm run build
+   vp check   # format, lint, and type-check (vp check --fix to auto-fix)
+   vp build
    ```
 4. Open a pull request with a clear description of what changed and why
 
-**Note:** There is no test framework configured. Type correctness (`tsc -b`) and linting (`eslint .`) are the primary automated checks.
+**Note:** There is no test framework configured. `vp check` (Oxfmt, Oxlint, and type-checking) is the primary automated check.
 
 ---
 

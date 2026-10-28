@@ -42,10 +42,7 @@ function EditorPage() {
   const [cardColor, setCardColor] = useState("#1e1e2e");
   const [cardOpacity, setCardOpacity] = useState(100);
 
-  const cardBackground = useMemo(
-    () => hexToRgba(cardColor, cardOpacity),
-    [cardColor, cardOpacity],
-  );
+  const cardBackground = useMemo(() => hexToRgba(cardColor, cardOpacity), [cardColor, cardOpacity]);
 
   const screenshotOptions: ScreenshotOptions = useMemo(
     () => ({

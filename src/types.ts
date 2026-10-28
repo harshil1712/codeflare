@@ -70,7 +70,7 @@ export const COMMON_LANGUAGES: LanguageOption[] = [
 export interface ScreenshotMeta {
   key: string;
   uploaded: string; // ISO timestamp
-  size: number;     // bytes
+  size: number; // bytes
 }
 
 export interface ScreenshotOptions {

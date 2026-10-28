@@ -4,10 +4,7 @@ import Editor from "react-simple-code-editor";
 import WindowCard from "./WindowCard";
 
 function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 interface PreviewProps {
@@ -62,7 +59,7 @@ function Preview({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, language]);
 
   // Derive highlighted HTML from code, language, theme, and the loaded highlighter
@@ -74,7 +71,7 @@ function Preview({
         lang: language,
         theme: theme,
       });
-      
+
       // Extract inner HTML from Shiki's <pre><code>...</code></pre>
       // react-simple-code-editor provides its own <pre>, so we only need the inner content
       const match = html.match(/<code[^>]*>([\s\S]*?)<\/code>/);
@@ -92,8 +89,8 @@ function Preview({
 
   // Generate line numbers for the gutter (memoized)
   const lineNumbers = useMemo(() => {
-    const lineCount = code.split('\n').length;
-    return Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
+    const lineCount = code.split("\n").length;
+    return Array.from({ length: lineCount }, (_, i) => i + 1).join("\n");
   }, [code]);
 
   return (
@@ -111,10 +108,11 @@ function Preview({
             highlight={() => highlightedHtml}
             padding={0}
             style={{
-              fontFamily: 'ui-monospace, "Fira Code", "JetBrains Mono", Menlo, Monaco, Consolas, monospace',
+              fontFamily:
+                'ui-monospace, "Fira Code", "JetBrains Mono", Menlo, Monaco, Consolas, monospace',
               fontSize: `${fontSize}px`,
-              lineHeight: '1.6',
-              minHeight: '200px',
+              lineHeight: "1.6",
+              minHeight: "200px",
             }}
             textareaClassName="code-textarea"
             preClassName="code-pre"

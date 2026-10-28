@@ -28,15 +28,17 @@ export class ErrorBoundary extends Component<Props, State> {
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100vh",
-          padding: "2rem",
-          textAlign: "center",
-        }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
+            padding: "2rem",
+            textAlign: "center",
+          }}
+        >
           <h1>Something went wrong</h1>
           <p style={{ marginTop: "1rem", color: "rgba(255, 255, 255, 0.7)" }}>
             {this.state.error?.message || "An unexpected error occurred"}

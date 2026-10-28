@@ -21,14 +21,11 @@ function SignInPage() {
         password,
       });
       if (signInError) {
-        setError(
-          signInError.message ??
-            "Sign in failed. Please check your credentials.",
-        );
+        setError(signInError.message ?? "Sign in failed. Please check your credentials.");
         return;
       }
 
-      router.navigate({ to: "/" });
+      await router.navigate({ to: "/" });
     } finally {
       setLoading(false);
     }
@@ -39,9 +36,7 @@ function SignInPage() {
       <div className="auth-card">
         <div className="auth-card-header">
           <h2 className="auth-title">Sign in to CodeFlare</h2>
-          <p className="auth-subtitle">
-            Sign in to save screenshots and access your gallery.
-          </p>
+          <p className="auth-subtitle">Sign in to save screenshots and access your gallery.</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>

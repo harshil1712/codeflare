@@ -46,16 +46,10 @@ app.use("/api/*", async (c, next) => {
   if (c.req.path.startsWith("/api/auth")) {
     return next();
   }
-  const ip =
-    c.req.header("cf-connecting-ip") ||
-    c.req.header("x-forwarded-for") ||
-    "unknown";
+  const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || "unknown";
   const { success } = await c.env.RATE_LIMITER.limit({ key: ip });
   if (!success) {
-    return c.json(
-      { error: "Rate limit exceeded. Please try again later." },
-      429,
-    );
+    return c.json({ error: "Rate limit exceeded. Please try again later." }, 429);
   }
   return next();
 });
@@ -90,10 +84,7 @@ function isValidCssValue(value: string): boolean {
 }
 
 // Module-level cache for Shiki highlighters
-const highlighterCache = new Map<
-  string,
-  ReturnType<typeof createHighlighter>
->();
+const highlighterCache = new Map<string, ReturnType<typeof createHighlighter>>();
 
 async function getHighlighter(theme: string, lang: string) {
   const key = `${theme}:${lang}`;
@@ -113,9 +104,10 @@ async function getHighlighter(theme: string, lang: string) {
 app.post("/api/screenshot", async (c) => {
   try {
     // Parse and validate JSON
-    let body: ScreenshotRequest;
+    // Untrusted input: any field may be missing, so defaults and validation below apply
+    let body: Partial<ScreenshotRequest>;
     try {
-      body = await c.req.json<ScreenshotRequest>();
+      body = await c.req.json<Partial<ScreenshotRequest>>();
     } catch {
       return c.json({ error: "Invalid JSON body" }, 400);
     }
@@ -154,30 +146,17 @@ app.post("/api/screenshot", async (c) => {
     }
 
     // Validate background CSS value
-    if (
-      !background ||
-      typeof background !== "string" ||
-      !isValidCssValue(background)
-    ) {
+    if (!background || typeof background !== "string" || !isValidCssValue(background)) {
       return c.json({ error: "Invalid background value" }, 400);
     }
 
     // Validate cardBackground CSS value
-    if (
-      !cardBackground ||
-      typeof cardBackground !== "string" ||
-      !isValidCssValue(cardBackground)
-    ) {
+    if (!cardBackground || typeof cardBackground !== "string" || !isValidCssValue(cardBackground)) {
       return c.json({ error: "Invalid cardBackground value" }, 400);
     }
 
     // Validate padding
-    if (
-      typeof padding !== "number" ||
-      padding < 0 ||
-      padding > 200 ||
-      !Number.isFinite(padding)
-    ) {
+    if (typeof padding !== "number" || padding < 0 || padding > 200 || !Number.isFinite(padding)) {
       return c.json({ error: "Invalid padding (must be 0-200)" }, 400);
     }
 
@@ -363,10 +342,7 @@ app.post("/api/screenshot", async (c) => {
           headers: c.req.raw.headers,
         });
         if (!session) {
-          return c.json(
-            { error: "Authentication required to save screenshots" },
-            401,
-          );
+          return c.json({ error: "Authentication required to save screenshots" }, 401);
         }
 
         const key = `screenshots/${session.user.id}/${Date.now()}-${crypto.randomUUID()}.png`;

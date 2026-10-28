@@ -6,31 +6,35 @@
 Users paste code into the editor, configure styling, and export a PNG via a
 headless-browser screenshot pipeline running on Cloudflare Workers.
 
-- **Frontend**: React 19 SPA (TypeScript, Vite 8 + SWC) in `src/`
+- **Frontend**: React 19 SPA (TypeScript, Vite+ / Vite 8 + SWC) in `src/`
+- **Toolchain**: [Vite+](https://viteplus.dev) (`vite-plus`, `vp` CLI) – dev/build, Oxlint, Oxfmt
 - **Backend**: Cloudflare Worker API using Hono 4.13 (TypeScript) in `worker/`
 - **Deployment**: Cloudflare Pages (frontend) + Cloudflare Workers (backend via Wrangler)
-- **Package Manager**: npm
-- **TypeScript Version**: ~6.0.3 (strict mode enforced; TS 7 is not yet supported by typescript-eslint)
+- **Package Manager**: npm, driven through `vp` (`vp install`, `vp add`, `vpx`)
+- **TypeScript**: strict mode enforced; type-checking runs in `vp check` via the bundled
+  TypeScript 7 (tsgo) toolchain. `typescript` ~6.0.3 stays installed for editor tooling
 
 ### Key Dependencies
 
-| Package | Purpose |
-|---------|---------|
-| `shiki` | Syntax highlighting (used in both frontend preview and worker) |
-| `@cloudflare/kumo` | Cloudflare UI kit v2 (Button, Input, Select, Switch, Surface) |
-| `@cloudflare/puppeteer` | Headless browser for server-side PNG generation |
-| `@phosphor-icons/react` | Icon library |
-| `react-simple-code-editor` | Textarea-based code editor with highlight overlay |
-| `hono` | HTTP framework for the Cloudflare Worker API |
+| Package                    | Purpose                                                        |
+| -------------------------- | -------------------------------------------------------------- |
+| `shiki`                    | Syntax highlighting (used in both frontend preview and worker) |
+| `@cloudflare/kumo`         | Cloudflare UI kit v2 (Button, Input, Select, Switch, Surface)  |
+| `@cloudflare/puppeteer`    | Headless browser for server-side PNG generation                |
+| `@phosphor-icons/react`    | Icon library                                                   |
+| `react-simple-code-editor` | Textarea-based code editor with highlight overlay              |
+| `hono`                     | HTTP framework for the Cloudflare Worker API                   |
 
 ## Architecture
 
 The project uses **TypeScript project references** across three `tsconfig` files:
+
 - `tsconfig.app.json` – Frontend (ES2022, DOM + JSX)
 - `tsconfig.node.json` – Build tooling (ES2023)
 - `tsconfig.worker.json` – Cloudflare Worker (extends node config)
 
 Frontend and backend are loosely coupled:
+
 - Frontend (`src/App.tsx`) fetches from `/api/screenshot`
 - Worker (`worker/index.ts`) serves the API via Hono
 - Wrangler bundles both together; frontend assets are served by Workers as SPA
@@ -40,17 +44,35 @@ Frontend and backend are loosely coupled:
 ## Build, Lint, and Test Commands
 
 ```bash
-npm run dev          # Start Vite dev server with HMR (localhost:5173)
-npm run build        # Type-check (tsc -b) then bundle frontend + worker
-npm run lint         # Run ESLint on all .ts/.tsx files (flat config)
-npm run preview      # Build and preview production locally
-npm run deploy       # Build and deploy to Cloudflare Workers + Pages
-npm run cf-typegen   # Regenerate Cloudflare Worker types (worker-configuration.d.ts)
+vp install           # Install dependencies (delegates to npm; pinned via devEngines)
+vp dev               # Vite dev server with HMR (localhost:5173)
+vp check             # Format check + Oxlint + type-check (all three tsconfigs) in one pass
+vp check --fix       # Same, applying formatter and lint autofixes
+vp lint              # Oxlint only (type-aware)
+vp fmt               # Oxfmt only
+vp build             # Bundle frontend + worker (does NOT type-check; run vp check first)
+vp preview           # Preview the production build (run vp build first)
+vp run deploy        # vp check && vp build && wrangler deploy
+vp run cf-typegen    # Regenerate Cloudflare Worker types (worker-configuration.d.ts)
+vp run db:generate   # drizzle-kit: generate migrations from src/db/schema.ts
+vp run db:migrate    # Apply D1 migrations locally
+vp run auth:generate # Regenerate src/db/auth-schema.ts with the Better Auth CLI
 ```
 
-**No test framework is currently configured.** To add tests, use Vitest (Vite-native).
+**Use `vp`, not `npm`/`npx`.** `vp add <pkg>` / `vp add -D <pkg>` / `vp remove <pkg>` manage
+dependencies, `vp outdated` / `vp update` handle upgrades, and `vpx <bin>` runs local binaries
+(e.g. `vpx wrangler d1 list`). Built-in commands (`dev`, `build`, `check`, `lint`, `fmt`,
+`preview`, `test`) cannot be overridden by `package.json` scripts, so `package.json` only holds
+project tasks, run with `vp run <name>`. Node.js and npm versions are declared as ranges in
+`package.json#devEngines`; `vp` downloads matching versions automatically.
 
-**Quick checks**: `npx eslint src/App.tsx` (single file) or `npm run build` (full type-check).
+**No test framework is currently configured.** To add tests, use `vp test` (Vitest bundled in
+Vite+); import from `vite-plus/test`, not `vitest`.
+
+**Quick checks**: `vp lint src/App.tsx` (single file) or `vp check` (everything).
+
+All tool config (Vite, `lint`, `fmt`) lives in `vite.config.ts`; import `defineConfig` from
+`vite-plus`, not `vite`. There is no `eslint.config.js`, `.oxlintrc.json`, or `.prettierrc`.
 
 ## Code Style Guidelines
 
@@ -69,25 +91,29 @@ npm run cf-typegen   # Regenerate Cloudflare Worker types (worker-configuration.
 
 ### Formatting
 
-| Aspect | Style | Notes |
-|--------|-------|-------|
-| **Indentation** | 2 spaces | All `.ts`, `.tsx`, `.js` files |
-| **Quotes** | Double `"` | Prefer double quotes in code |
-| **Semicolons** | Yes | End all statements with semicolons |
-| **Trailing commas** | Yes | In objects, arrays, and JSX props |
-| **Line length** | Soft limit 100 cols | No hard enforce; be reasonable |
+| Aspect              | Style               | Notes                              |
+| ------------------- | ------------------- | ---------------------------------- |
+| **Indentation**     | 2 spaces            | All `.ts`, `.tsx`, `.js` files     |
+| **Quotes**          | Double `"`          | Prefer double quotes in code       |
+| **Semicolons**      | Yes                 | End all statements with semicolons |
+| **Trailing commas** | Yes                 | In objects, arrays, and JSX props  |
+| **Line length**     | Soft limit 100 cols | No hard enforce; be reasonable     |
 
-No Prettier is configured. Follow `src/App.tsx` as the reference for formatting style.
+Enforced by Oxfmt (`fmt` block in `vite.config.ts`); run `vp fmt` rather than formatting
+by hand. Generated files (`worker-configuration.d.ts`, `drizzle/**`, `src/db/auth-schema.ts`)
+are excluded.
 
 ### Imports
 
 **Order and grouping:**
+
 1. External packages (`react`, `hono`, `@cloudflare/kumo`, `shiki`)
 2. Local components and modules (`./components/Preview`, `../types`)
 3. Type-only imports (`import type { ... }`)
 4. CSS and asset imports (`./App.css`)
 
 **Example** (from `src/App.tsx`):
+
 ```tsx
 import { useState, useMemo } from "react";
 import { Button, Select } from "@cloudflare/kumo";
@@ -105,21 +131,24 @@ import "./App.css";
 
 ### Naming Conventions
 
-| Element | Convention | Examples |
-|---------|-----------|----------|
-| React components | PascalCase | `App.tsx`, `WindowCard.tsx` |
-| Component files | `.tsx` extension | `Preview.tsx` |
-| Variables & functions | camelCase | `count`, `setCount`, `handleClick` |
-| Directories | lowercase | `src/`, `worker/`, `components/` |
-| CSS classes | kebab-case | `card-title`, `sidebar-panel` |
-| Constants | UPPER_SNAKE_CASE | `BACKGROUND_PRESETS`, `THEME_OPTIONS` |
-| Type/interface names | PascalCase | `interface ScreenshotOptions`, `type ExportAction` |
+| Element               | Convention       | Examples                                           |
+| --------------------- | ---------------- | -------------------------------------------------- |
+| React components      | PascalCase       | `App.tsx`, `WindowCard.tsx`                        |
+| Component files       | `.tsx` extension | `Preview.tsx`                                      |
+| Variables & functions | camelCase        | `count`, `setCount`, `handleClick`                 |
+| Directories           | lowercase        | `src/`, `worker/`, `components/`                   |
+| CSS classes           | kebab-case       | `card-title`, `sidebar-panel`                      |
+| Constants             | UPPER_SNAKE_CASE | `BACKGROUND_PRESETS`, `THEME_OPTIONS`              |
+| Type/interface names  | PascalCase       | `interface ScreenshotOptions`, `type ExportAction` |
 
 ### Type Annotations
 
 - **Interfaces for objects**, **types for unions/aliases**:
   ```ts
-  interface ScreenshotOptions { code: string; language: string; }
+  interface ScreenshotOptions {
+    code: string;
+    language: string;
+  }
   type ExportAction = "r2_only" | "r2_and_download" | "download_only";
   ```
 - **Inline type assertions** are acceptable: `res.json() as { error?: string }`
@@ -147,6 +176,7 @@ import "./App.css";
 ### Async Patterns
 
 **Cancellation in `useEffect`** – use a cancelled flag to avoid state updates after unmount:
+
 ```tsx
 useEffect(() => {
   let cancelled = false;
@@ -155,12 +185,15 @@ useEffect(() => {
     if (!cancelled) setState(result);
   }
   load();
-  return () => { cancelled = true; };
+  return () => {
+    cancelled = true;
+  };
 }, [dep]);
 ```
 
 **Module-level caching in the Worker** – use a `Map` at module scope to cache
 expensive-to-create objects (e.g., Shiki highlighters) across requests:
+
 ```ts
 const highlighterCache = new Map<string, Highlighter>();
 ```
@@ -188,21 +221,22 @@ const highlighterCache = new Map<string, Highlighter>();
 
 ### Bindings (defined in `wrangler.jsonc`)
 
-| Binding | Type | Purpose |
-|---------|------|---------|
-| `BROWSER` | Browser Rendering | Puppeteer launch for screenshot generation |
-| `SCREENSHOTS` | R2 Bucket (`codeflare-screenshots`) | Optional persistent screenshot storage |
-| `RATE_LIMITER` | Rate Limit (10 req / 60 s) | Per-IP abuse prevention |
+| Binding        | Type                                | Purpose                                    |
+| -------------- | ----------------------------------- | ------------------------------------------ |
+| `BROWSER`      | Browser Rendering                   | Puppeteer launch for screenshot generation |
+| `SCREENSHOTS`  | R2 Bucket (`codeflare-screenshots`) | Optional persistent screenshot storage     |
+| `RATE_LIMITER` | Rate Limit (10 req / 60 s)          | Per-IP abuse prevention                    |
 
 Type them via the `AppEnv` interface in `worker/index.ts`:
+
 ```ts
 interface AppEnv {
-  Bindings: { BROWSER: BrowserRun; SCREENSHOTS: R2Bucket; RATE_LIMITER: RateLimit; };
+  Bindings: { BROWSER: BrowserRun; SCREENSHOTS: R2Bucket; RATE_LIMITER: RateLimit };
 }
 const app = new Hono<AppEnv>();
 ```
 
-Regenerate `worker-configuration.d.ts` with `npm run cf-typegen` after any `wrangler.jsonc` changes.
+Regenerate `worker-configuration.d.ts` with `vp run cf-typegen` after any `wrangler.jsonc` changes.
 
 ### Security Conventions
 
@@ -219,26 +253,33 @@ Regenerate `worker-configuration.d.ts` with `npm run cf-typegen` after any `wran
 - Component styles live in `App.css` (organized with comment banners); global reset in `index.css`
 - CSS class names are kebab-case globals (no scoping)
 
-## ESLint Configuration
+## Lint Configuration (Oxlint)
 
-- **Flat config** in `eslint.config.js` (ESLint 10, `defineConfig` from `eslint/config`),
-  targeting `**/*.{ts,tsx}`
-- **Enforced rulesets**: `@eslint/js` recommended, `typescript-eslint` recommended,
-  `eslint-plugin-react-hooks` v7 `configs.flat["recommended-latest"]` (includes React Compiler
-  rules such as `set-state-in-effect` — derive state with `useMemo` or set it in async
-  callbacks instead of synchronously in effects), `eslint-plugin-react-refresh` vite preset
+- **`lint` block in `vite.config.ts`**, migrated from the former ESLint flat config; rules for
+  `**/*.{ts,tsx}` live in `lint.overrides`
+- **Rulesets**: ESLint recommended equivalents, typescript-eslint recommended equivalents, React
+  hooks + React Compiler rules (e.g. `react/set-state-in-effect` — derive state with `useMemo`
+  or set it in async callbacks instead of synchronously in effects), `react/only-export-components`
+- **Type-aware**: `typeAware` + `typeCheck` are on, so rules like `no-floating-promises` apply
+  (`await` promises or mark intentional fire-and-forget calls with `void`)
+- **`no-undef` is off** for TS files – TypeScript already reports undefined identifiers
+- **Suppressions**: `// oxlint-disable-next-line <rule>` (not `eslint-disable`)
 - **Ignored**: `dist/`, `worker-configuration.d.ts` (generated)
-- **Run**: `npm run lint` or `npx eslint .`
+- **Run**: `vp lint` or `vp check`
 
 ## Notes for Agents
 
-- **Run `npm run build` before finishing** – it type-checks all three tsconfig targets together
-- **No test framework exists** – focus on type correctness (`tsc -b`) and linting (`eslint .`)
+- **Run `vp check` and `vp build` before finishing** – `check` covers format, lint, and types
+  across all three tsconfig targets; `build` bundles
+- **No test framework exists** – focus on type correctness and linting (`vp check`)
 - **`src/types.ts` is the source of truth** for shared interfaces, union types, and constants;
   add new shared types there rather than defining them inline or in component files
 - **`verbatimModuleSyntax`** will cause a compile error if you forget `import type` on
   type-only imports — always check after adding imports
 - **Avoid enums and namespaces** (`erasableSyntaxOnly` flag); use union types and plain objects
-- **Regenerate CF types** (`npm run cf-typegen`) when modifying `wrangler.jsonc`
+- **Regenerate CF types** (`vp run cf-typegen`) when modifying `wrangler.jsonc`
 - **CORS** in `worker/index.ts` currently allows all origins — tighten before production use
-- Follow `src/App.tsx` as the formatting reference; scaffold files may be inconsistent
+- **Compatibility date** is `2026-10-23` (latest supported by the installed workerd); review the
+  [compatibility flags](https://developers.cloudflare.com/workers/configuration/compatibility-flags/)
+  before bumping it
+- Formatting is automated by Oxfmt; don't hand-tune style

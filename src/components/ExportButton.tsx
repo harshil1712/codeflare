@@ -42,7 +42,7 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
       });
 
       if (!response.ok) {
-        const error = await response.json() as { error?: string };
+        const error = (await response.json()) as { error?: string };
         throw new Error(error.error || "Failed to generate screenshot");
       }
 
@@ -59,9 +59,10 @@ function ExportButton({ options, disabled }: ExportButtonProps) {
       console.error("Export error:", error);
       toastManager.add({
         title: "Export failed",
-        description: error instanceof Error
-          ? error.message
-          : "Failed to generate screenshot. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate screenshot. Please try again.",
         type: "error",
         priority: "high",
       });
